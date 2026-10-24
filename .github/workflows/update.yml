@@ -1,0 +1,151 @@
+name: Update package
+
+on:
+  repository_dispatch:
+    types: [update-package]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package name
+        required: true
+        type: choice
+        options: [oci-mirror-proxy]
+      tag:
+        description: Stable upstream release tag (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      package: ${{ steps.package.outputs.package }}
+      tag: ${{ steps.package.outputs.tag }}
+      repository: ${{ steps.package.outputs.repository }}
+      formula: ${{ steps.package.outputs.formula }}
+      current: ${{ steps.release.outputs.current }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate package and version
+        id: package
+        run: node scripts/select-package.mjs
+      - name: Check latest stable release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM: ${{ steps.package.outputs.repository }}
+          TAG: ${{ steps.package.outputs.tag }}
+        run: |
+          set -eu
+          latest=$(gh api "repos/$UPSTREAM/releases/latest" --jq .tag_name)
+          if [ "$latest" = "$TAG" ]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Ignoring a release that is not the latest stable release.'
+          fi
+      - name: Generate formula
+        if: steps.release.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM: ${{ steps.package.outputs.repository }}
+          TAG: ${{ steps.package.outputs.tag }}
+          GENERATOR: ${{ steps.package.outputs.generator }}
+          FORMULA: ${{ steps.package.outputs.formula }}
+        run: |
+          set -eu
+          gh release download "$TAG" --repo "$UPSTREAM" --pattern SHA256SUMS --dir "$RUNNER_TEMP/release"
+          node "$GENERATOR" "$TAG" "$RUNNER_TEMP/release/SHA256SUMS" "$FORMULA"
+          node --test scripts/*.test.mjs
+      - uses: actions/upload-artifact@v4
+        if: steps.release.outputs.current == 'true'
+        with:
+          name: formula
+          path: ${{ steps.package.outputs.formula }}
+          if-no-files-found: error
+
+  test:
+    needs: generate
+    if: needs.generate.outputs.current == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+      HOMEBREW_NO_ANALYTICS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: formula
+          path: Formula
+      - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+      - name: Install and test generated formula
+        env:
+          PACKAGE: ${{ needs.generate.outputs.package }}
+        run: |
+          set -eu
+          brew tap zmide/tap "$GITHUB_WORKSPACE"
+          brew install "zmide/tap/$PACKAGE"
+          brew test "zmide/tap/$PACKAGE"
+          brew services info "zmide/tap/$PACKAGE"
+
+  publish:
+    needs: [generate, test]
+    if: needs.generate.outputs.current == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: formula
+          path: ${{ runner.temp }}/formula
+      - name: Commit tested formula
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM: ${{ needs.generate.outputs.repository }}
+          TAG: ${{ needs.generate.outputs.tag }}
+          PACKAGE: ${{ needs.generate.outputs.package }}
+          FORMULA: ${{ needs.generate.outputs.formula }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -eu
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # Reapply only this package on a fresh checkout after competing updates.
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "$DEFAULT_BRANCH"
+            git checkout -B publish FETCH_HEAD
+            latest=$(gh api "repos/$UPSTREAM/releases/latest" --jq .tag_name)
+            if [ "$latest" != "$TAG" ]; then
+              echo 'A newer stable release superseded this update.'
+              exit 0
+            fi
+            mkdir -p Formula
+            cp "$RUNNER_TEMP/formula/$PACKAGE.rb" "$FORMULA"
+            git add -- "$FORMULA"
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "chore: update $PACKAGE to $TAG"
+            if git push origin "HEAD:$DEFAULT_BRANCH"; then exit 0; fi
+          done
+          echo 'Unable to publish formula after five attempts.' >&2
+          exit 1
