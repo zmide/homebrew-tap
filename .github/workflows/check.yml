@@ -47,12 +47,16 @@ jobs:
               with:
                   fetch-depth: 0
                   persist-credentials: false
+            - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+              with:
+                  stable: true
             - uses: pnpm/action-setup@v4
             - uses: actions/setup-node@v4
               with:
                   node-version-file: .nvmrc
                   cache: pnpm
-            - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+            - name: Verify Node version
+              run: node --input-type=module -e 'import { readFileSync } from "node:fs"; if (process.version !== `v${readFileSync(".nvmrc", "utf8").trim()}`) throw new Error(`Unexpected Node version ${process.version}`)'
             - run: pnpm install --frozen-lockfile
             - name: Register the checked-out tap recipes
               shell: bash
@@ -69,6 +73,10 @@ jobs:
                   )
                   # setup-homebrew may have already tapped the GitHub remote.
                   brew tap --custom-remote "$tap" "$GITHUB_WORKSPACE"
+                  # Changing the remote invalidates trust granted by setup-homebrew.
+                  if brew command trust >/dev/null 2>&1; then
+                    brew trust "$tap"
+                  fi
                   tap_repository=$(brew --repository "$tap")
                   # A local clone omits uncommitted candidates. Copy only after tapping.
                   for directory in Formula Casks Cask; do
