@@ -1,0 +1,42 @@
+{
+	"nav": { "formula": "Formulae", "cask": "Casks", "github": "View on GitHub", "language": "Switch language", "theme": "Color theme", "home": "Home" },
+	"home": {
+		"recent": "Recently updated",
+		"browse": "Browse all",
+		"tap": "Add this tap",
+		"tapHint": "Register the tap with Homebrew."
+	},
+	"catalog": {
+		"all": "All packages",
+		"formula": "Formulae",
+		"cask": "Casks",
+		"formulaDescription": "Command-line tools, libraries and services in this tap.",
+		"caskDescription": "Applications and other binary distributions in this tap.",
+		"search": "Search packages…",
+		"searchLabel": "Search this tap",
+		"sort": "Sort packages",
+		"updated": "Recently updated",
+		"name": "Name A–Z",
+		"results_one": "{{count}} package",
+		"results_other": "{{count}} packages",
+		"empty": "No packages found",
+		"emptyDescription": "No packages match the current search or filters.",
+		"emptyTap": "No packages of this type in this tap.",
+		"clear": "Clear filters",
+		"type": "Package type",
+		"version": "Version",
+		"updatedLabel": "Last publish",
+		"unknownDate": "No commit history",
+		"open": "View package",
+		"searchResults": "Search results"
+	},
+	"copy": { "copy": "Copy command", "copied": "Copied!", "failed": "Could not copy. Select and copy the command manually." },
+	"theme": { "system": "System", "light": "Light", "dark": "Dark" },
+	"footer": {
+		"data": "Homebrew-native data",
+		"source": "Source",
+		"api": "JSON API",
+		"disclaimer": "An independent tap. Not affiliated with Homebrew."
+	},
+	"error": { "title": "Page not found", "description": "The requested page does not exist.", "back": "Back to catalog" }
+}

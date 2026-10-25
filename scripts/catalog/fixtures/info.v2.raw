@@ -1,0 +1,188 @@
+{
+  "formulae": [
+    {
+      "name": "oci-mirror-proxy",
+      "full_name": "zmide/tap/oci-mirror-proxy",
+      "tap": "zmide/tap",
+      "oldnames": [],
+      "aliases": [],
+      "versioned_formulae": [],
+      "desc": "Local, read-only registry mirror proxy for Docker",
+      "license": null,
+      "homepage": "https://ocimp.zmide.com",
+      "versions": {
+        "stable": "1.0.19",
+        "head": null,
+        "bottle": false
+      },
+      "urls": {
+        "stable": {
+          "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_arm64.tar.gz",
+          "tag": null,
+          "revision": null,
+          "using": null,
+          "checksum": "83ba84157735af94ccf9ba4b10371a16ad8cf165f0f72256091f62b49c9e6976"
+        }
+      },
+      "revision": 0,
+      "version_scheme": 0,
+      "compatibility_version": null,
+      "autobump": true,
+      "no_autobump_message": null,
+      "skip_livecheck": false,
+      "bottle": {},
+      "pour_bottle_only_if": null,
+      "keg_only": false,
+      "keg_only_reason": null,
+      "options": [],
+      "build_dependencies": [],
+      "dependencies": [],
+      "test_dependencies": [],
+      "recommended_dependencies": [],
+      "optional_dependencies": [],
+      "uses_from_macos": [],
+      "uses_from_macos_bounds": [],
+      "requirements": [],
+      "conflicts_with": [],
+      "conflicts_with_reasons": [],
+      "link_overwrite": [],
+      "caveats": "Before the first start, create your user configuration if it does not exist:\n  oci-mirror-proxy init\n\nRun as your current user (without sudo):\n  brew services start zmide/tap/oci-mirror-proxy\n\nDocker settings are not changed automatically. See:\n  https://ocimp.zmide.com/docs/installation#homebrew\n",
+      "installed": [],
+      "linked_keg": null,
+      "pinned": false,
+      "outdated": false,
+      "deprecated": false,
+      "deprecation_date": null,
+      "deprecation_reason": null,
+      "deprecation_replacement_formula": null,
+      "deprecation_replacement_cask": null,
+      "deprecate_args": null,
+      "disabled": false,
+      "disable_date": null,
+      "disable_reason": null,
+      "disable_replacement_formula": null,
+      "disable_replacement_cask": null,
+      "disable_args": null,
+      "post_install_defined": false,
+      "service": {
+        "run": [
+          "/opt/homebrew/opt/oci-mirror-proxy/bin/oci-mirror-proxy",
+          "serve"
+        ],
+        "run_type": "immediate",
+        "keep_alive": {
+          "always": true
+        },
+        "log_path": "/opt/homebrew/var/log/oci-mirror-proxy.log",
+        "error_log_path": "/opt/homebrew/var/log/oci-mirror-proxy.log"
+      },
+      "tap_git_head": "b5f03c83c40ebc52908b58aa7aa2acf177d73b2a",
+      "ruby_source_path": "Formula/oci-mirror-proxy.rb",
+      "ruby_source_checksum": {
+        "sha256": "1475428eebb235dc812bd9d36fd8229ce7ae430b496bd64c91f34f0e72560ee5"
+      },
+      "variations": {
+        "tahoe": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "7b302d282751428110a7c681ebb3a57676379251eec537060e5fb7b4394c515e"
+            }
+          }
+        },
+        "sequoia": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "7b302d282751428110a7c681ebb3a57676379251eec537060e5fb7b4394c515e"
+            }
+          }
+        },
+        "sonoma": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "7b302d282751428110a7c681ebb3a57676379251eec537060e5fb7b4394c515e"
+            }
+          }
+        },
+        "ventura": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "7b302d282751428110a7c681ebb3a57676379251eec537060e5fb7b4394c515e"
+            }
+          }
+        },
+        "monterey": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "7b302d282751428110a7c681ebb3a57676379251eec537060e5fb7b4394c515e"
+            }
+          }
+        },
+        "big_sur": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "7b302d282751428110a7c681ebb3a57676379251eec537060e5fb7b4394c515e"
+            }
+          }
+        },
+        "catalina": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_darwin_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "7b302d282751428110a7c681ebb3a57676379251eec537060e5fb7b4394c515e"
+            }
+          }
+        },
+        "x86_64_linux": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_linux_amd64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "b46fbd264fc57b1a0c400bd0b1229e0f9aa5e379300b09c8a5bea1d5942a4671"
+            }
+          }
+        },
+        "arm64_linux": {
+          "urls": {
+            "stable": {
+              "url": "https://github.com/runui/oci-mirror-proxy/releases/download/v1.0.19/oci-mirror-proxy_v1.0.19_linux_arm64.tar.gz",
+              "tag": null,
+              "revision": null,
+              "using": null,
+              "checksum": "46f896a67db281e64ec384fe2f029edcd7b227a980a64669cbe2fc5959bb3e08"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "casks": []
+}

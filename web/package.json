@@ -1,0 +1,38 @@
+{
+	"name": "@tap/web",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "nuxt dev --host 127.0.0.1",
+		"generate": "nuxt generate",
+		"preview": "nuxt preview --host 127.0.0.1",
+		"postinstall": "nuxt prepare",
+		"type:check": "nuxt typecheck",
+		"lint": "oxlint .",
+		"test": "vitest run",
+		"test:e2e": "playwright test",
+		"ui:add": "TS_NODE_PROJECT=tsconfig.registry.json shadcn add"
+	},
+	"dependencies": {
+		"@lucide/vue": "1.61.0",
+		"@tile-ui/styles": "1.1.4",
+		"@tile-ui/theme-kumo": "1.0.0",
+		"i18next": "26.5.10",
+		"i18next-vue": "5.4.0",
+		"nuxt": "4.6.2",
+		"shiki": "^4.5.0",
+		"vue": "^3.5.0",
+		"vue-router": "^5.0.0"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.56.0",
+		"@vitejs/plugin-vue-jsx": "^5.1.0",
+		"@vue/test-utils": "^2.4.6",
+		"happy-dom": "^20.0.0",
+		"sass": "^1.93.0",
+		"shadcn": "4.22.1",
+		"typescript": "^5.9.0",
+		"vitest": "^4.0.0",
+		"vue-tsc": "^3.1.0"
+	}
+}

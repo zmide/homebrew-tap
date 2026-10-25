@@ -1,0 +1,42 @@
+{
+	"nav": { "formula": "Formula", "cask": "Cask", "github": "在 GitHub 查看", "language": "切换语言", "theme": "颜色主题", "home": "首页" },
+	"home": {
+		"recent": "最近更新",
+		"browse": "浏览全部",
+		"tap": "添加 Tap",
+		"tapHint": "向 Homebrew 注册此 Tap。"
+	},
+	"catalog": {
+		"all": "全部软件包",
+		"formula": "Formula",
+		"cask": "Cask",
+		"formulaDescription": "此 Tap 中的命令行工具、程序库和服务。",
+		"caskDescription": "这个 Tap 中的应用程序与其他二进制分发。",
+		"search": "搜索软件包…",
+		"searchLabel": "搜索当前 Tap",
+		"sort": "软件包排序",
+		"updated": "最近更新",
+		"name": "名称 A–Z",
+		"results_other": "{{count}} 个软件包",
+		"results_one": "{{count}} 个软件包",
+		"empty": "未找到软件包",
+		"emptyDescription": "没有符合当前搜索或筛选条件的软件包。",
+		"emptyTap": "此 Tap 中暂无该类型的软件包。",
+		"clear": "清除筛选",
+		"type": "软件包类型",
+		"version": "版本",
+		"updatedLabel": "最后发布",
+		"unknownDate": "暂无提交记录",
+		"open": "查看软件包",
+		"searchResults": "搜索结果"
+	},
+	"copy": { "copy": "复制命令", "copied": "已复制！", "failed": "无法复制，请手动选择并复制命令。" },
+	"theme": { "system": "跟随系统", "light": "浅色", "dark": "深色" },
+	"footer": {
+		"data": "Homebrew 原生数据",
+		"source": "源码",
+		"api": "JSON API",
+		"disclaimer": "独立维护的 Tap，与 Homebrew 官方无隶属关系。"
+	},
+	"error": { "title": "页面不存在", "description": "未找到请求的页面。", "back": "返回目录" }
+}

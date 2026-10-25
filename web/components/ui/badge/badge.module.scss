@@ -1,0 +1,98 @@
+@use '../../../styles/variables/colors' as *;
+
+.badge {
+	display: inline-flex;
+	width: fit-content;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	gap: $spacing-1;
+	overflow: hidden;
+	border-radius: $radius-full;
+	border: var(--tile-badge-border-width, 1px) solid transparent;
+	padding: var(--tile-badge-padding, 0.125rem #{$spacing-2});
+	font-size: $text-xs;
+	font-weight: $font-medium;
+	line-height: var(--tile-badge-line-height, inherit);
+	white-space: nowrap;
+	transition:
+		color $transition-fast,
+		box-shadow $transition-fast;
+	outline: none;
+
+	&:focus-visible {
+		border-color: $ring;
+		box-shadow: 0 0 0 3px color-mix(in srgb, $ring 50%, transparent);
+	}
+
+	&[aria-invalid='true'] {
+		border-color: $destructive;
+		box-shadow: 0 0 0 3px color-mix(in srgb, $destructive 20%, transparent);
+	}
+
+	svg {
+		pointer-events: none;
+		width: 0.75rem;
+		height: 0.75rem;
+	}
+
+	// 样式变体
+	&.variantDefault {
+		background-color: var(--tile-badge-default-background, #{$primary});
+		color: var(--tile-badge-default-color, #{$primary-foreground});
+
+		a:hover & {
+			background-color: var(--tile-badge-default-hover-background, #{$primary-hover});
+		}
+	}
+
+	&.variantSecondary {
+		background-color: var(--tile-badge-secondary-background, #{$secondary});
+		color: var(--tile-badge-secondary-color, #{$secondary-foreground});
+
+		a:hover & {
+			background-color: var(--tile-badge-secondary-hover-background, #{$secondary-hover});
+		}
+	}
+
+	&.variantDestructive {
+		background-color: var(--tile-badge-destructive-background, #{$destructive});
+		color: var(--tile-badge-destructive-color, #{$destructive-foreground});
+
+		a:hover & {
+			background-color: var(--tile-badge-destructive-hover-background, #{$destructive-hover});
+		}
+	}
+
+	&.variantOutline {
+		border-width: var(--tile-badge-outline-border-width, 1px);
+		border-color: var(--tile-badge-outline-border, #{$border});
+		background-color: var(--tile-badge-outline-background, transparent);
+		color: $foreground;
+
+		a:hover & {
+			background-color: $accent;
+			color: $accent-foreground;
+		}
+	}
+
+	&.variantGhost {
+		a:hover & {
+			background-color: $accent;
+			color: $accent-foreground;
+		}
+	}
+
+	&.variantLink {
+		color: $primary;
+		text-underline-offset: 4px;
+
+		a:hover & {
+			text-decoration: underline;
+		}
+	}
+
+	a:hover & {
+		outline: var(--tile-badge-link-hover-outline, none);
+	}
+}

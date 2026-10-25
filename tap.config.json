@@ -1,0 +1,19 @@
+{
+	"brand": {
+		"name": "zmide",
+		"title": "Zmide Homebrew Tap",
+		"description": "Homebrew formulae and casks in zmide/tap.",
+		"descriptionZh": "zmide/tap 中的 Homebrew Formula 和 Cask。"
+	},
+	"tap": "zmide/tap",
+	"repository": "https://github.com/zmide/homebrew-tap",
+	"site": {
+		"origin": "https://zmide.github.io",
+		"basePath": "/homebrew-tap/"
+	},
+	"i18n": {
+		"defaultLocale": "en",
+		"locales": ["en", "zh-CN"]
+	},
+	"recentLimit": 8
+}

@@ -1,0 +1,105 @@
+name: Deploy Pages
+
+on:
+    push:
+    workflow_dispatch:
+    workflow_run:
+        workflows: [Update package]
+        types: [completed]
+
+permissions:
+    contents: read
+
+# Keep only the newest pending run, without interrupting an active deployment.
+concurrency:
+    group: pages
+    cancel-in-progress: false
+
+jobs:
+    build:
+        if: >-
+            (github.event_name != 'workflow_run' &&
+             github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+            (github.event_name == 'workflow_run' &&
+             github.event.workflow_run.conclusion == 'success' &&
+             github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+             github.event.workflow_run.head_repository.full_name == github.repository)
+        runs-on: macos-15
+        timeout-minutes: 30
+        env:
+            HOMEBREW_NO_AUTO_UPDATE: '1'
+            HOMEBREW_NO_INSTALL_CLEANUP: '1'
+            HOMEBREW_NO_ANALYTICS: '1'
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  # A workflow_run may refer to an older pre-publication SHA. Always build
+                  # the latest trusted default branch, never the event's head SHA.
+                  ref: ${{ github.event.repository.default_branch }}
+                  fetch-depth: 0
+                  persist-credentials: false
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: pnpm
+            - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+            - run: pnpm install --frozen-lockfile
+            - name: Register the checked-out tap recipes
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  tap=$(node --input-type=module <<'NODE'
+                  import { readFileSync } from 'node:fs';
+                  const { tap } = JSON.parse(readFileSync('tap.config.json', 'utf8'));
+                  if (typeof tap !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*\/[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(tap)) {
+                    throw new Error('Invalid tap identity in tap.config.json');
+                  }
+                  console.log(tap);
+                  NODE
+                  )
+                  brew tap "$tap" "$GITHUB_WORKSPACE"
+                  tap_repository=$(brew --repository "$tap")
+                  for directory in Formula Casks; do
+                    if [ ! -d "$directory" ]; then continue; fi
+                    while IFS= read -r -d '' recipe; do
+                      target="$tap_repository/$recipe"
+                      mkdir -p "$(dirname "$target")"
+                      cp "$recipe" "$target"
+                      cmp "$recipe" "$target"
+                      source_hash=$(shasum -a 256 "$recipe" | awk '{print $1}')
+                      target_hash=$(shasum -a 256 "$target" | awk '{print $1}')
+                      test "$source_hash" = "$target_hash"
+                    done < <(find "$directory" -type f -name '*.rb' -print0)
+                  done
+            - name: Export fresh official Homebrew metadata
+              run: pnpm catalog:export
+            - run: pnpm catalog:build
+            - run: pnpm lint
+            - run: pnpm fmt:check
+            - run: pnpm type:check
+            - run: pnpm test
+            - name: Generate and verify the static site
+              run: pnpm generate
+            - name: Install Chromium
+              run: pnpm --dir web exec playwright install chromium
+            - run: pnpm test:e2e
+            - uses: actions/upload-pages-artifact@v3
+              with:
+                  path: web/.output/public
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: Deploy the generated artifact
+              id: deployment
+              uses: actions/deploy-pages@v4

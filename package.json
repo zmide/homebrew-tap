@@ -1,0 +1,28 @@
+{
+	"name": "homebrew-tap",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"scripts": {
+		"dev": "pnpm --dir web dev",
+		"dev:demo": "TAP_DEMO=1 pnpm --dir web dev --port 4175",
+		"catalog:export": "node scripts/catalog/export.mjs",
+		"catalog:build": "node scripts/catalog/build.mjs",
+		"generate": "pnpm catalog:build && pnpm --dir web generate && node scripts/catalog/verify-output.mjs",
+		"preview": "pnpm --dir web preview",
+		"lint": "oxlint scripts && pnpm --dir web lint",
+		"fmt": "oxfmt .",
+		"fmt:check": "oxfmt --check .",
+		"type:check": "pnpm --dir web type:check",
+		"test": "node --test scripts/*.test.mjs scripts/catalog/*.test.mjs && pnpm --dir web test",
+		"test:e2e": "pnpm --dir web test:e2e"
+	},
+	"devDependencies": {
+		"oxfmt": "0.56.0",
+		"oxlint": "1.72.0"
+	},
+	"engines": {
+		"node": ">=24.15.0 <25"
+	},
+	"packageManager": "pnpm@10.20.0"
+}

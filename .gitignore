@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+
+web/.nuxt/
+web/.output/
+web/dist
+web/.generated/
+web/coverage/
+web/test-results/
+web/playwright-report/
+web/.nuxt-demo/

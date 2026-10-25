@@ -1,0 +1,100 @@
+.badge {
+	margin-top: var(--site-space-4);
+	min-width: 0;
+	font-size: var(--site-text-md);
+	line-height: var(--site-leading-secondary);
+	max-width: 48rem;
+}
+.toolbar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--site-space-1);
+}
+.copyControl {
+	position: relative;
+	display: inline-flex;
+	&:hover .tooltip,
+	&:focus-within .tooltip,
+	.tooltip.copied {
+		visibility: visible;
+	}
+	.tooltip.dismissed {
+		visibility: hidden;
+	}
+}
+.copyButton {
+	--tile-button-ghost-color: var(--detail-muted);
+	--tile-button-icon-size: 0.875rem;
+	border: 0;
+}
+.tooltip {
+	position: absolute;
+	z-index: 30;
+	top: 100%;
+	right: 0;
+	visibility: hidden;
+	width: max-content;
+	max-width: min(14rem, 70vw);
+	padding: var(--site-space-2);
+	border: 1px solid var(--detail-border);
+	border-radius: 5px;
+	background: var(--popover);
+	color: var(--popover-foreground);
+	font-size: var(--site-text-sm);
+	font-weight: normal;
+	line-height: var(--site-leading-footnote);
+	overflow-wrap: anywhere;
+}
+.preview {
+	max-width: 100%;
+	min-width: 0;
+	a {
+		display: block;
+		text-decoration: none;
+	}
+}
+.previewBadge {
+	display: inline-flex;
+	max-width: 100%;
+	min-height: 20px;
+	overflow: hidden;
+	border-radius: 3px;
+	color: #fff;
+	font:
+		11px / 20px Verdana,
+		Geneva,
+		sans-serif;
+	text-shadow: 0 1px 0 rgb(0 0 0 / 0.2);
+	vertical-align: middle;
+}
+.previewLabel {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+	gap: 4px;
+	padding-inline: 6px;
+	background: #555;
+	img {
+		flex-shrink: 0;
+	}
+}
+.previewMessage {
+	min-width: 0;
+	padding-inline: 6px;
+	background: #fe7d37;
+	overflow-wrap: anywhere;
+}
+.unknown .previewMessage {
+	background: #9f9f9f;
+}
+.feedback {
+	display: block;
+	color: var(--detail-muted);
+	&:empty {
+		display: none;
+	}
+}
+.error {
+	color: var(--destructive, #b42318);
+}

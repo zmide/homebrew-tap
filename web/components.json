@@ -1,0 +1,15 @@
+{
+	"$schema": "https://ui.shadcn.com/schema.json",
+	"style": "tile-ui",
+	"rsc": false,
+	"tsx": true,
+	"tailwind": { "config": "", "css": "styles/registry.css", "baseColor": "", "cssVariables": true, "prefix": "" },
+	"aliases": {
+		"components": "@/components",
+		"ui": "@/components/ui",
+		"utils": "@/components/ui/lib/utils",
+		"hooks": "@/composables",
+		"lib": "@/components/ui/lib"
+	},
+	"registries": { "@tile-ui": "https://vue.tileui.zmorg.cn/r/{name}.json" }
+}
