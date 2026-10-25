@@ -27,6 +27,7 @@ jobs:
             tag: ${{ steps.package.outputs.tag }}
             repository: ${{ steps.package.outputs.repository }}
             formula: ${{ steps.package.outputs.formula }}
+            inspectService: ${{ steps.package.outputs.inspectService }}
             current: ${{ steps.release.outputs.current }}
         steps:
             - uses: actions/checkout@v4
@@ -64,7 +65,7 @@ jobs:
                   set -eu
                   gh release download "$TAG" --repo "$UPSTREAM" --pattern SHA256SUMS --dir "$RUNNER_TEMP/release"
                   node "$GENERATOR" "$TAG" "$RUNNER_TEMP/release/SHA256SUMS" "$FORMULA"
-                  node --test scripts/*.test.mjs
+                  node --test scripts/*.test.mjs scripts/packages/*.test.mjs
             - uses: actions/upload-artifact@v4
               if: steps.release.outputs.current == 'true'
               with:
@@ -102,6 +103,7 @@ jobs:
                   PACKAGE: ${{ needs.generate.outputs.package }}
                   FORMULA: ${{ needs.generate.outputs.formula }}
                   TAG: ${{ needs.generate.outputs.tag }}
+                  INSPECT_SERVICE: ${{ needs.generate.outputs.inspectService }}
               shell: bash
               run: |
                   set -euo pipefail
@@ -136,7 +138,7 @@ jobs:
                   NODE
                   brew install --formula "$full_name"
                   brew test "$full_name"
-                  brew services info "$full_name"
+                  if [ "$INSPECT_SERVICE" = true ]; then brew services info "$full_name"; fi
 
     publish:
         needs: [generate, test]

@@ -23,12 +23,12 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version-file: .nvmrc
-            - run: node --test scripts/*.test.mjs
+            - run: node --test scripts/*.test.mjs scripts/packages/*.test.mjs scripts/catalog/*.test.mjs
             - name: Check Ruby syntax
               shell: bash
               run: |
                   set -euo pipefail
-                  for directory in Formula Casks; do
+                  for directory in Formula Casks Cask; do
                     if [ ! -d "$directory" ]; then continue; fi
                     while IFS= read -r -d '' recipe; do
                       ruby -c "$recipe"
@@ -70,7 +70,7 @@ jobs:
                   brew tap "$tap" "$GITHUB_WORKSPACE"
                   tap_repository=$(brew --repository "$tap")
                   # A local clone omits uncommitted candidates. Copy only after tapping.
-                  for directory in Formula Casks; do
+                  for directory in Formula Casks Cask; do
                     if [ ! -d "$directory" ]; then continue; fi
                     while IFS= read -r -d '' recipe; do
                       target="$tap_repository/$recipe"

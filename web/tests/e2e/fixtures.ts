@@ -7,7 +7,7 @@ function generated(name: string): unknown {
 	try {
 		return JSON.parse(readFileSync(new URL(`../../.generated/${name}`, import.meta.url), 'utf8'));
 	} catch (cause) {
-		throw new Error(`Missing or invalid generated ${name}. Build a real catalog (or explicitly supply a verified native snapshot); browser tests never substitute demo data.`, {
+		throw new Error(`Missing or invalid generated ${name}. Build a real catalog (or explicitly supply a verified native snapshot) before running browser tests.`, {
 			cause,
 		});
 	}
@@ -19,8 +19,7 @@ export const entries = index as CatalogEntry[];
 export type NativeRecord = Record<string, unknown>;
 export const snapshot = generated('info.v2.json') as { formulae: NativeRecord[]; casks: NativeRecord[] };
 if (!Array.isArray(snapshot.formulae) || !Array.isArray(snapshot.casks)) throw new Error('A native Homebrew v2 snapshot with formulae and casks arrays is required');
-export const oci = entries.find((entry) => entry.kind === 'formula' && entry.name === 'oci-mirror-proxy');
-export const selectedEntry = oci || entries[0];
+export const selectedEntry = entries[0];
 export { appConfig, basePath };
 
 export function route(path = '', locale = appConfig.i18n.defaultLocale): string {

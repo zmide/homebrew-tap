@@ -43,7 +43,6 @@ export default defineComponent({
 		kind: { type: String as PropType<PackageKind>, required: true },
 		item: { type: Object as PropType<HomebrewPackage>, required: true },
 		updatedAt: String,
-		demo: Boolean,
 		support: Array as PropType<SupportDeclaration[]>,
 		links: { type: Object as PropType<{ repository?: string; releases?: string }>, default: () => ({}) },
 	},
@@ -109,7 +108,7 @@ export default defineComponent({
 
 				{
 					label: label('api'),
-					href: !props.demo && apiPath(props.kind, packageName(props.kind, props.item)) ? withBase(apiPath(props.kind, packageName(props.kind, props.item))!) : undefined,
+					href: apiPath(props.kind, packageName(props.kind, props.item)) ? withBase(apiPath(props.kind, packageName(props.kind, props.item))!) : undefined,
 				},
 			]).filter((link) => !primaryLinks.some((primary) => primary.href === link.href));
 			const command = installCommand(props.kind, props.item);
@@ -128,7 +127,7 @@ export default defineComponent({
 							<h1>{displayName(props.kind, entry)}</h1>
 						</div>
 						{text(entry.desc) ? <p class={styles.description}>{entry.desc}</p> : null}
-						<PackageBadge kind={props.kind} item={props.item} demo={props.demo} />
+						<PackageBadge kind={props.kind} item={props.item} />
 					</header>
 
 					<div class={styles.layout}>

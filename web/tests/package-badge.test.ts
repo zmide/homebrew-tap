@@ -13,12 +13,11 @@ vi.mock('../composables/locale', () => ({
 }));
 let wrapper: VueWrapper;
 const writeText = vi.fn<(value: string) => Promise<void>>();
-const item = { name: 'tool@2', full_name: 'zmide/tap/tool@2', versions: { stable: '2.0' } };
+const item = { name: 'tool@2', full_name: 'example/tools/tool@2', versions: { stable: '2.0' } };
 beforeEach(() => {
 	vi.useFakeTimers();
 	writeText.mockReset().mockResolvedValue(undefined);
 	vi.stubGlobal('navigator', { clipboard: { writeText } });
-	vi.stubGlobal('useRequestURL', () => new URL('http://localhost:4175/homebrew-tap/'));
 });
 afterEach(() => {
 	wrapper?.unmount();
@@ -26,7 +25,7 @@ afterEach(() => {
 	vi.useRealTimers();
 	vi.unstubAllGlobals();
 });
-const render = (demo = false) => (wrapper = mount(PackageBadge, { props: { kind: 'formula', item, demo } }));
+const render = () => (wrapper = mount(PackageBadge, { props: { kind: 'formula', item } }));
 
 describe('PackageBadge', () => {
 	it('renders only the badge and copy control, with a local-language preview link and public Markdown', async () => {
@@ -57,7 +56,7 @@ describe('PackageBadge', () => {
 		render();
 		await wrapper.get('button').trigger('click');
 		await flushPromises();
-		await wrapper.setProps({ item: { ...item, name: 'next', full_name: 'zmide/tap/next' } });
+		await wrapper.setProps({ item: { ...item, name: 'next', full_name: 'example/tools/next' } });
 		expect(wrapper.get('[role="status"]').text()).toBe('');
 		await wrapper.get('button').trigger('click');
 		await flushPromises();
@@ -102,18 +101,5 @@ describe('PackageBadge', () => {
 		await wrapper.setProps({ item: { name: item.name, full_name: item.full_name } });
 		expect(wrapper.get('[data-badge-preview]').text()).toBe('Homebrewunknown');
 		expect(wrapper.get('[role="status"]').text()).toBe('');
-	});
-	it('demo packages render and copy a working static badge linked to the local demo', async () => {
-		render(true);
-		expect(wrapper.find('img').exists()).toBe(true);
-		expect(wrapper.find('a').exists()).toBe(true);
-		await wrapper.get('button').trigger('click');
-		await flushPromises();
-		const copied = writeText.mock.calls[0]![0];
-		expect(copied).toContain('https://img.shields.io/static/v1?');
-		expect(copied).toContain('message=2.0');
-		expect(copied).toContain(`http://localhost:4175${withBase('/formula/tool%402/')}`);
-		expect(copied).not.toContain('/endpoint?');
-		expect(wrapper.text()).not.toContain('preview only');
 	});
 });

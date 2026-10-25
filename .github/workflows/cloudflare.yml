@@ -1,4 +1,4 @@
-name: Deploy Pages
+name: Deploy Cloudflare Pages
 
 on:
     push:
@@ -12,18 +12,19 @@ permissions:
 
 # Keep only the newest pending run, without interrupting an active deployment.
 concurrency:
-    group: pages
+    group: cloudflare-pages
     cancel-in-progress: false
 
 jobs:
     build:
         if: >-
+            vars.CLOUDFLARE_PAGES_PROJECT != '' && (
             (github.event_name != 'workflow_run' &&
              github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
             (github.event_name == 'workflow_run' &&
              github.event.workflow_run.conclusion == 'success' &&
              github.event.workflow_run.head_branch == github.event.repository.default_branch &&
-             github.event.workflow_run.head_repository.full_name == github.repository)
+             github.event.workflow_run.head_repository.full_name == github.repository))
         runs-on: macos-15
         timeout-minutes: 30
         env:
@@ -60,7 +61,7 @@ jobs:
                   )
                   brew tap "$tap" "$GITHUB_WORKSPACE"
                   tap_repository=$(brew --repository "$tap")
-                  for directory in Formula Casks; do
+                  for directory in Formula Casks Cask; do
                     if [ ! -d "$directory" ]; then continue; fi
                     while IFS= read -r -d '' recipe; do
                       target="$tap_repository/$recipe"
@@ -84,22 +85,39 @@ jobs:
             - name: Install Chromium
               run: pnpm --dir web exec playwright install chromium
             - run: pnpm test:e2e
-            - uses: actions/upload-pages-artifact@v3
+            - uses: actions/upload-artifact@v4
               with:
+                  name: static-site
                   path: web/.output/public
+                  include-hidden-files: true
+                  if-no-files-found: error
+                  retention-days: 1
 
     deploy:
         needs: build
         runs-on: ubuntu-latest
         timeout-minutes: 10
-        permissions:
-            contents: read
-            pages: write
-            id-token: write
         environment:
-            name: github-pages
-            url: ${{ steps.deployment.outputs.page_url }}
+            name: cloudflare-pages
+            url: https://brew.zmorg.cn
         steps:
-            - name: Deploy the generated artifact
-              id: deployment
-              uses: actions/deploy-pages@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '24'
+            - uses: actions/download-artifact@v4
+              with:
+                  name: static-site
+                  path: public
+            - name: Check Cloudflare deployment settings
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN secret' >&2; exit 1; }
+                  test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID secret' >&2; exit 1; }
+            - name: Upload static assets to Cloudflare Pages
+              uses: cloudflare/wrangler-action@v4
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  command: pages deploy public --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=${{ github.event.repository.default_branch }}

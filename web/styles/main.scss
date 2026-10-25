@@ -820,15 +820,3 @@ h1 {
 		animation: none !important;
 	}
 }
-
-.demo-notice {
-	grid-column: 1 / -1;
-	margin-block: var(--site-space-4) var(--site-space-8);
-	padding: var(--site-space-4);
-	border: 1px dashed var(--border);
-	border-radius: 8px;
-	background: var(--card);
-	color: var(--foreground);
-	font-size: var(--site-text-md);
-	line-height: var(--site-leading-secondary);
-}

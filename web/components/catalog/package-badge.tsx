@@ -15,7 +15,6 @@ export default defineComponent({
 	props: {
 		kind: { type: String as PropType<PackageKind>, required: true },
 		item: { type: Object as PropType<HomebrewPackage>, required: true },
-		demo: Boolean,
 	},
 	setup(props) {
 		const { t, localPath } = useCatalogLocale();
@@ -23,14 +22,8 @@ export default defineComponent({
 		const showFallback = ref(false);
 		const tooltipDismissed = ref(false);
 		const tooltipId = useId();
-		const demoOrigin = props.demo ? useRequestURL().origin : undefined;
-		const badge = computed(() => packageBadge(props.kind, props.item, defaultBadgeOptions, { origin: demoOrigin ?? config.site.origin, basePath: withBase('/') }));
-		// Demo packages have no public endpoint: copy a working static image instead.
-		const markdown = computed(() => {
-			const value = badge.value;
-			if (!value) return '';
-			return props.demo ? `[![${value.alt}](${value.previewUrl})](${value.detailUrl})` : value.markdown;
-		});
+		const badge = computed(() => packageBadge(props.kind, props.item, defaultBadgeOptions, { origin: config.site.origin, basePath: withBase('/') }));
+		const markdown = computed(() => badge.value?.markdown ?? '');
 		// Browsers parse noscript as raw text when scripting is enabled. Keep it
 		// opaque to Vue hydration, but safely render selectable HTML without JS.
 		const noScriptHtml = computed(

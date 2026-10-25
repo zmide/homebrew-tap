@@ -8,4 +8,9 @@ web/.generated/
 web/coverage/
 web/test-results/
 web/playwright-report/
-web/.nuxt-demo/
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+!.env.example

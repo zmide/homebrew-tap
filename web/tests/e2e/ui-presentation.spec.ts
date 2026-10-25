@@ -74,7 +74,7 @@ test('catalog rows never underline text, but keep separators, hover feedback and
 });
 
 test('browse-all is spaced 24px below the list and preserves its existing sort behavior', async ({ page }) => {
-	test.skip(entries.length <= appConfig.recentLimit, 'The verified catalog has no browse-all control; the demo covers this layout');
+	test.skip(entries.length <= appConfig.recentLimit, 'The verified catalog has no browse-all control');
 	for (const width of [1440, 390, 320]) {
 		await page.setViewportSize({ width, height: 900 });
 		await openPage(page);
@@ -202,7 +202,7 @@ test('dependency variants, categories and lists follow the site spacing scale', 
 		const record = (entry.kind === 'formula' ? snapshot.formulae : snapshot.casks).find((item) => (entry.kind === 'formula' ? item.name : item.token) === entry.name);
 		return record && dependencyViews(entry.kind, record as HomebrewPackage).length;
 	});
-	test.skip(!entry, 'The verified catalog has no dependency section; multi-category and multi-platform demo layouts are checked separately');
+	test.skip(!entry, 'The verified catalog has no dependency section');
 	for (const width of [1440, 390, 320]) {
 		await page.setViewportSize({ width, height: 900 });
 		await openPage(page, packageRoute(entry!));

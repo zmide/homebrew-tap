@@ -23,6 +23,8 @@ test('accepts registered dispatch and manual inputs, rejects unsafe inputs', asy
 	for (const manual of [false, true]) {
 		assert.equal((await run({ package: 'oci-mirror-proxy', tag: 'v1.2.3' }, manual)).status, 0);
 		assert.match(await readFile(outputPath, 'utf8'), /repository=runui\/oci-mirror-proxy\n/);
+		assert.match(await readFile(outputPath, 'utf8'), /generator=scripts\/packages\/oci-mirror-proxy\.mjs\n/);
+		assert.match(await readFile(outputPath, 'utf8'), /inspectService=true\n/);
 	}
 	for (const name of ['__proto__', '../bad', 'unknown', undefined]) {
 		assert.notEqual((await run({ package: name, tag: 'v1.2.3' })).status, 0);

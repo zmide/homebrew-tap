@@ -24,17 +24,15 @@ const verifyOutput = (options) => verifyCatalogOutput({ env: {}, ...options });
 const baseConfig = {
 	brand: { name: 'Test tap', title: 'Software', description: 'A tap' },
 	tap,
-	repository: 'https://github.com/zmide/homebrew-tap',
-	site: { origin: 'https://zmide.github.io', basePath: '/homebrew-tap/' },
+	repository: 'https://github.com/example/homebrew-tools',
+	site: { origin: 'https://catalog.example.test', basePath: '/homebrew-tap/' },
 	i18n: { defaultLocale: 'en', locales: ['en', 'zh-CN'] },
 	recentLimit: 8,
 	links: { 'formula:zmide/tap/oci-mirror-proxy': { repository: 'https://github.com/runui/oci-mirror-proxy' } },
 };
 
 async function temporary(t) {
-	const approved = process.env.OPENCODE_TMPDIR || resolve(tmpdir(), 'opencode');
-	await mkdir(approved, { recursive: true });
-	const root = await mkdtemp(resolve(approved, 'catalog-test-'));
+	const root = await mkdtemp(resolve(tmpdir(), 'tap-catalog-test-'));
 	t.after(() => rm(root, { recursive: true, force: true }));
 	return root;
 }

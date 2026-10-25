@@ -8,8 +8,8 @@
 	"tap": "zmide/tap",
 	"repository": "https://github.com/zmide/homebrew-tap",
 	"site": {
-		"origin": "https://zmide.github.io",
-		"basePath": "/homebrew-tap/"
+		"origin": "https://brew.zmorg.cn",
+		"basePath": "/"
 	},
 	"i18n": {
 		"defaultLocale": "en",

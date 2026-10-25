@@ -85,7 +85,6 @@
 	"serviceStop": "停止服务",
 	"serviceConfigurationHelp": "路径来自导出 Homebrew 数据的环境，可能与你的电脑不同。请使用 brew services 管理服务，不要直接照抄这些路径。",
 	"defaultConfiguration": "默认导出数据",
-	"demoNotice": "本地演示数据：软件包与统计均为模拟值，请勿执行这些安装命令。",
 	"statisticsMissing": "未提供",
 	"statisticsDetails": "查看统计明细",
 	"statisticsOption": "安装条目",

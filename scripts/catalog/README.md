@@ -97,7 +97,7 @@ Route paths are relative, URL-encoded paths such as `formula/tool%402%2Bkit`. Jo
 ## Version badges
 
 `shared/homebrew-version.mjs` is used by catalog search, badge generation, detail
-pages and the demo index. A nonblank formula `pkg_version` takes precedence;
+pages. A nonblank formula `pkg_version` takes precedence;
 otherwise stable versions append `_N` only for positive integer revisions.
 HEAD-only formulae show `HEAD` without a revision suffix. Native cask strings
 (including `latest` and comma-separated values) are preserved. Missing/blank
@@ -132,13 +132,11 @@ The default endpoint URL does not override the metadata color, so a package
 can transition between known and unknown versions without changing embed URLs.
 
 On-page previews are local HTML/CSS using current package data and the local
-Homebrew logo, not external image requests. Demo copies use static Shields.io
-images and current-server detail links; they work without generated public
-demo JSON. Neither previews nor badge generation require a backend, tokens,
+Homebrew logo, not external image requests. Neither previews nor badge generation require a backend, tokens,
 additional workflow permissions or changes to Homebrew API objects.
 
 The manifest's Homebrew metadata describes the original export host, not a later build host. Legacy snapshots without matching export metadata remain reusable and report `{ version: null, platform: null }`; a brand-only configuration edit does not force re-export. Native original JSON bytes are never changed to add provenance or formula revision suffixes.
 
 Verification honors `NUXT_APP_BASE_URL` when present (including `/` for root deployment), with the same safe path validation as `site.basePath`. The manifest must still match the source configuration's `site`; the environment override never rewrites source provenance.
 
-The fixture `fixtures/info.v2.raw` is a real, unformatted JSON export of the committed `oci-mirror-proxy` formula, not sample production content. Synthetic packages exist only inside tests.
+The fixture `fixtures/info.v2.raw` is a fixed real, unformatted JSON export paired with `fixtures/oci-mirror-proxy.rb`. These are regression-test source assets, independent of the current production recipe/version; never use them as fallback production data. Synthetic packages exist only inside tests.

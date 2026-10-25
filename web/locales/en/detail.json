@@ -85,7 +85,6 @@
 	"serviceStop": "Stop service",
 	"serviceConfigurationHelp": "These paths come from the Homebrew export environment and may differ on your computer. Use brew services to manage the service instead of copying these paths.",
 	"defaultConfiguration": "Default export",
-	"demoNotice": "Local demo data - packages and analytics are simulated. Do not run these installation commands.",
 	"statisticsMissing": "Not provided",
 	"statisticsDetails": "View statistics details",
 	"statisticsOption": "Installation entry",

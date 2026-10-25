@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { renderFormula } from './update-homebrew.mjs';
+import { renderFormula } from './oci-mirror-proxy.mjs';
 
 const platforms = ['darwin_arm64', 'darwin_amd64', 'linux_arm64', 'linux_amd64'];
 const tag = 'v1.2.3';
@@ -47,11 +47,13 @@ test('rejects missing, malformed, duplicate, and mismatched checksums', () => {
 });
 
 test('checked-in formula is reproducible from its version and checksums', async () => {
-	const formula = await readFile(new URL('../Formula/oci-mirror-proxy.rb', import.meta.url), 'utf8');
+	const formula = await readFile(new URL('../../Formula/oci-mirror-proxy.rb', import.meta.url), 'utf8');
 	const version = /version "([\d.]+)"/.exec(formula)[1];
 	const entries = [...formula.matchAll(/url "[^"\n]+\/([^/"\n]+)"\n\s+sha256 "([a-f0-9]{64})"/g)].map(([, name, sum]) => `${sum}  ${name}`);
 	assert.equal(entries.length, 4);
-	assert.equal(formula, renderFormula(`v${version}`, entries.join('\n')));
+	// Relocating the generator must not require republishing an unchanged recipe.
+	const withoutHeader = (value) => value.slice(value.indexOf('\n') + 1);
+	assert.equal(withoutHeader(formula), withoutHeader(renderFormula(`v${version}`, entries.join('\n'))));
 });
 
 test('CLI writes the formula only after successful validation', async (t) => {
@@ -59,7 +61,7 @@ test('CLI writes the formula only after successful validation', async (t) => {
 	t.after(() => rm(cwd, { recursive: true, force: true }));
 	const checksumFile = path.join(cwd, 'SHA256SUMS');
 	const output = path.join(cwd, 'formula.rb');
-	const script = fileURLToPath(new URL('./update-homebrew.mjs', import.meta.url));
+	const script = fileURLToPath(new URL('./oci-mirror-proxy.mjs', import.meta.url));
 	await writeFile(checksumFile, sums.join('\n'));
 	function run(...args) {
 		return spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });

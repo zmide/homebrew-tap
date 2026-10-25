@@ -5,7 +5,8 @@ const input = process.env.GITHUB_EVENT_NAME === 'repository_dispatch' ? event.cl
 const packages = {
 	'oci-mirror-proxy': {
 		repository: 'runui/oci-mirror-proxy',
-		generator: 'scripts/update-homebrew.mjs',
+		generator: 'scripts/packages/oci-mirror-proxy.mjs',
+		inspectService: true,
 	},
 };
 const name = input?.package;

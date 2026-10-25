@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, oci, openPage, packageRoute, route, selectedEntry, snapshot, test } from './fixtures';
+import { entries, expect, openPage, packageRoute, route, selectedEntry, snapshot, test } from './fixtures';
 import { basePath, baseURL } from './settings.mjs';
 
 test('a package detail is prerendered and can be loaded and refreshed directly', async ({ page, request }) => {
@@ -21,17 +21,17 @@ test('a package detail is prerendered and can be loaded and refreshed directly',
 	await expect(page.getByRole('heading', { level: 1 })).toHaveText(entry.displayName);
 });
 
-test('the real oci-mirror-proxy formula keeps its qualified install command', async ({ page }) => {
-	test.skip(!oci, 'This template checkout does not contain oci-mirror-proxy');
-	await openPage(page, packageRoute(oci!));
-	await expect(page.getByRole('heading', { level: 1, name: 'oci-mirror-proxy' })).toBeVisible();
-	await expect(page.locator('.command code')).toHaveText(`brew install ${oci!.fullName}`);
-	await expect(page.locator('article aside').getByRole('heading', { name: 'Package information', exact: true })).toBeVisible();
-	await expect(page.locator('article aside dl')).toContainText(oci!.version);
-	const native = snapshot.formulae.find((item) => item.name === 'oci-mirror-proxy')!;
-	if (native.caveats) await expect(page.getByRole('heading', { name: 'Caveats', exact: true })).toBeVisible();
-	if (native.service) {
-		await expect(page.getByRole('heading', { name: 'Service', exact: true })).toBeVisible();
+test('each package keeps its qualified install command and native sections', async ({ page }) => {
+	test.skip(!entries.length, 'This verified tap is empty');
+	for (const entry of entries) {
+		await openPage(page, packageRoute(entry));
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText(entry.displayName);
+		await expect(page.locator('.command code')).toHaveText(`brew install ${entry.kind === 'cask' ? '--cask ' : ''}${entry.fullName}`);
+		await expect(page.locator('article aside').getByRole('heading', { name: 'Package information', exact: true })).toBeVisible();
+		if (entry.version) await expect(page.locator('article aside dl')).toContainText(entry.version);
+		const native = (entry.kind === 'formula' ? snapshot.formulae : snapshot.casks).find((item) => (entry.kind === 'formula' ? item.name : item.token) === entry.name)!;
+		if (native.caveats) await expect(page.getByRole('heading', { name: 'Caveats', exact: true })).toBeVisible();
+		if (native.service) await expect(page.getByRole('heading', { name: 'Service', exact: true })).toBeVisible();
 	}
 });
 
