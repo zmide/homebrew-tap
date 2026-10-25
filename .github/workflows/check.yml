@@ -67,7 +67,8 @@ jobs:
                   console.log(tap);
                   NODE
                   )
-                  brew tap "$tap" "$GITHUB_WORKSPACE"
+                  # setup-homebrew may have already tapped the GitHub remote.
+                  brew tap --custom-remote "$tap" "$GITHUB_WORKSPACE"
                   tap_repository=$(brew --repository "$tap")
                   # A local clone omits uncommitted candidates. Copy only after tapping.
                   for directory in Formula Casks Cask; do
