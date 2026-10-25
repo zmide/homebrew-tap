@@ -76,7 +76,10 @@ jobs:
                     while IFS= read -r -d '' recipe; do
                       target="$tap_repository/$recipe"
                       mkdir -p "$(dirname "$target")"
-                      cp "$recipe" "$target"
+                      # setup-homebrew may link the tap directly to the checkout.
+                      if [ ! "$recipe" -ef "$target" ]; then
+                        cp "$recipe" "$target"
+                      fi
                       cmp "$recipe" "$target"
                       source_hash=$(shasum -a 256 "$recipe" | awk '{print $1}')
                       target_hash=$(shasum -a 256 "$target" | awk '{print $1}')
