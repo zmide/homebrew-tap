@@ -8,70 +8,64 @@ on:
             package:
                 description: Package name
                 required: true
-                type: choice
-                options: [oci-mirror-proxy]
+                type: string
             tag:
-                description: Stable upstream release tag (vMAJOR.MINOR.PATCH)
+                description: Upstream release tag (for example v1.2.3 or 1.1.2-beta.5)
                 required: true
                 type: string
 
 permissions:
     contents: read
 
+concurrency:
+    group: update-package-${{ github.event.client_payload.package || inputs.package }}
+    cancel-in-progress: false
+
+env:
+    PACKAGE: ${{ github.event.client_payload.package || inputs.package }}
+    TAG: ${{ github.event.client_payload.tag || inputs.tag }}
+    HOMEBREW_UPDATE_TRUST: ${{ vars.HOMEBREW_UPDATE_TRUST }}
+
 jobs:
     generate:
         runs-on: ubuntu-latest
-        timeout-minutes: 5
+        timeout-minutes: 10
         outputs:
-            package: ${{ steps.package.outputs.package }}
-            tag: ${{ steps.package.outputs.tag }}
-            repository: ${{ steps.package.outputs.repository }}
-            formula: ${{ steps.package.outputs.formula }}
-            inspectService: ${{ steps.package.outputs.inspectService }}
-            current: ${{ steps.release.outputs.current }}
+            current: ${{ steps.candidate.outputs.current }}
+            version: ${{ steps.candidate.outputs.version }}
+            recipe: ${{ steps.candidate.outputs.recipe }}
+            kind: ${{ steps.candidate.outputs.kind }}
+            matrix: ${{ steps.candidate.outputs.matrix }}
         steps:
             - uses: actions/checkout@v4
               with:
                   persist-credentials: false
+                  ref: ${{ github.event.repository.default_branch }}
+            - uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: '3.3'
+            - run: gem install jwt --version 2.10.2 --no-document
             - uses: actions/setup-node@v4
               with:
                   node-version-file: .nvmrc
-            - name: Validate package and version
-              id: package
-              run: node scripts/select-package.mjs
-            - name: Check latest stable release
-              id: release
+            - name: Test trusted legacy generator
+              run: node --test scripts/*.test.mjs scripts/packages/*.test.mjs
+            - name: Test generic updater
+              run: ruby scripts/package-update.test.rb
+            - name: Select release and prepare candidate
+              id: candidate
               env:
                   GH_TOKEN: ${{ github.token }}
-                  UPSTREAM: ${{ steps.package.outputs.repository }}
-                  TAG: ${{ steps.package.outputs.tag }}
-              run: |
-                  set -eu
-                  latest=$(gh api "repos/$UPSTREAM/releases/latest" --jq .tag_name)
-                  if [ "$latest" = "$TAG" ]; then
-                    echo 'current=true' >> "$GITHUB_OUTPUT"
-                  else
-                    echo 'Ignoring a release that is not the latest stable release.'
-                  fi
-            - name: Generate formula
-              if: steps.release.outputs.current == 'true'
-              env:
-                  GH_TOKEN: ${{ github.token }}
-                  UPSTREAM: ${{ steps.package.outputs.repository }}
-                  TAG: ${{ steps.package.outputs.tag }}
-                  GENERATOR: ${{ steps.package.outputs.generator }}
-                  FORMULA: ${{ steps.package.outputs.formula }}
-              run: |
-                  set -eu
-                  gh release download "$TAG" --repo "$UPSTREAM" --pattern SHA256SUMS --dir "$RUNNER_TEMP/release"
-                  node "$GENERATOR" "$TAG" "$RUNNER_TEMP/release/SHA256SUMS" "$FORMULA"
-                  node --test scripts/*.test.mjs scripts/packages/*.test.mjs
+              run: ruby scripts/package-update.rb prepare
             - uses: actions/upload-artifact@v4
-              if: steps.release.outputs.current == 'true'
+              if: steps.candidate.outputs.current == 'true'
               with:
-                  name: formula
-                  path: ${{ steps.package.outputs.formula }}
+                  name: package-candidate
+                  path: |
+                      ${{ runner.temp }}/candidate/recipe.rb
+                      ${{ runner.temp }}/candidate/candidate.json
                   if-no-files-found: error
+                  retention-days: 1
 
     test:
         needs: generate
@@ -79,109 +73,100 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [macos-15, ubuntu-latest]
+                os: ${{ fromJSON(needs.generate.outputs.matrix) }}
         runs-on: ${{ matrix.os }}
         timeout-minutes: 20
         env:
             HOMEBREW_NO_AUTO_UPDATE: '1'
             HOMEBREW_NO_INSTALL_CLEANUP: '1'
             HOMEBREW_NO_ANALYTICS: '1'
+            RECIPE: ${{ needs.generate.outputs.recipe }}
+            KIND: ${{ needs.generate.outputs.kind }}
+            VERSION: ${{ needs.generate.outputs.version }}
         steps:
             - uses: actions/checkout@v4
               with:
                   persist-credentials: false
             - uses: actions/download-artifact@v4
               with:
-                  name: formula
+                  name: package-candidate
                   path: ${{ runner.temp }}/candidate
-            - uses: actions/setup-node@v4
+            - uses: ruby/setup-ruby@v1
               with:
-                  node-version-file: .nvmrc
-            - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
-            - name: Install and test generated formula
-              env:
-                  PACKAGE: ${{ needs.generate.outputs.package }}
-                  FORMULA: ${{ needs.generate.outputs.formula }}
-                  TAG: ${{ needs.generate.outputs.tag }}
-                  INSPECT_SERVICE: ${{ needs.generate.outputs.inspectService }}
+                  ruby-version: '3.3'
+            - run: gem install jwt --version 2.10.2 --no-document
+            - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
+            - name: Register, validate and test candidate
               shell: bash
               run: |
                   set -euo pipefail
-                  tap=$(node --input-type=module <<'NODE'
-                  import { readFileSync } from 'node:fs';
-                  const { tap } = JSON.parse(readFileSync('tap.config.json', 'utf8'));
-                  if (typeof tap !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*\/[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(tap)) {
-                    throw new Error('Invalid tap identity in tap.config.json');
-                  }
-                  console.log(tap);
-                  NODE
-                  )
-                  brew tap "$tap" "$GITHUB_WORKSPACE"
-                  tap_repository=$(brew --repository "$tap")
-                  candidate="$RUNNER_TEMP/candidate/$(basename "$FORMULA")"
-                  target="$tap_repository/$FORMULA"
-                  # Register first: brew tap clones Git and would lose an uncommitted candidate.
+                  tap=$(ruby -rjson -e 'puts JSON.parse(File.read("tap.config.json")).fetch("tap")')
+                  [[ "$tap" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*/[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]
+                  brew tap --custom-remote "$tap" "$GITHUB_WORKSPACE"
+                  if brew command trust >/dev/null 2>&1; then brew trust "$tap"; fi
+                  target="$(brew --repository "$tap")/$RECIPE"
                   mkdir -p "$(dirname "$target")"
-                  cp "$candidate" "$target"
-                  cmp "$candidate" "$target"
-                  candidate_hash=$(shasum -a 256 "$candidate" | awk '{print $1}')
-                  target_hash=$(shasum -a 256 "$target" | awk '{print $1}')
-                  test "$candidate_hash" = "$target_hash"
+                  cp "$RUNNER_TEMP/candidate/recipe.rb" "$target"
+                  cmp "$RUNNER_TEMP/candidate/recipe.rb" "$target"
                   full_name="$tap/$PACKAGE"
-                  brew info --json=v2 --formula "$full_name" > "$RUNNER_TEMP/candidate-info.json"
-                  node --input-type=module <<'NODE'
-                  import assert from 'node:assert/strict';
-                  import { readFileSync } from 'node:fs';
-                  const info = JSON.parse(readFileSync(`${process.env.RUNNER_TEMP}/candidate-info.json`, 'utf8'));
-                  assert.equal(info.formulae.length, 1, 'Expected one candidate formula');
-                  assert.equal(info.formulae[0].versions.stable, process.env.TAG.slice(1), 'Homebrew must see the generated candidate version');
-                  NODE
-                  brew install --formula "$full_name"
-                  brew test "$full_name"
-                  if [ "$INSPECT_SERVICE" = true ]; then brew services info "$full_name"; fi
+                  brew info --json=v2 "--$KIND" "$full_name" > "$RUNNER_TEMP/info.json"
+                  ruby scripts/package-update.rb validate-info "$RUNNER_TEMP/info.json"
+                  if [ "$KIND" = cask ]; then
+                    brew style --cask "$full_name"
+                    brew audit --cask "$full_name"
+                    brew fetch --cask "$full_name"
+                    brew install --cask "$full_name"
+                    brew list --cask "$full_name"
+                    brew uninstall --cask "$full_name"
+                  else
+                    brew install --formula "$full_name"
+                    brew test "$full_name"
+                    if ruby -rjson -e 'exit(JSON.parse(File.read(ARGV[0])).fetch("formulae")[0]["service"] ? 0 : 1)' "$RUNNER_TEMP/info.json"; then brew services info "$full_name"; fi
+                  fi
 
     publish:
         needs: [generate, test]
         if: needs.generate.outputs.current == 'true'
         runs-on: ubuntu-latest
-        timeout-minutes: 5
+        timeout-minutes: 10
         permissions:
             contents: write
+            actions: read
+        env:
+            RECIPE: ${{ needs.generate.outputs.recipe }}
         steps:
             - uses: actions/checkout@v4
               with:
                   ref: ${{ github.event.repository.default_branch }}
             - uses: actions/download-artifact@v4
               with:
-                  name: formula
-                  path: ${{ runner.temp }}/formula
-            - name: Commit tested formula
+                  name: package-candidate
+                  path: ${{ runner.temp }}/candidate
+            - uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: '3.3'
+            - run: gem install jwt --version 2.10.2 --no-document
+            - name: Publish tested recipe
               env:
                   GH_TOKEN: ${{ github.token }}
-                  UPSTREAM: ${{ needs.generate.outputs.repository }}
-                  TAG: ${{ needs.generate.outputs.tag }}
-                  PACKAGE: ${{ needs.generate.outputs.package }}
-                  FORMULA: ${{ needs.generate.outputs.formula }}
                   DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+              shell: bash
               run: |
-                  set -eu
+                  set -euo pipefail
                   git config user.name 'github-actions[bot]'
                   git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-                  # Reapply only this package on a fresh checkout after competing updates.
                   for attempt in 1 2 3 4 5; do
                     git fetch origin "$DEFAULT_BRANCH"
                     git checkout -B publish FETCH_HEAD
-                    latest=$(gh api "repos/$UPSTREAM/releases/latest" --jq .tag_name)
-                    if [ "$latest" != "$TAG" ]; then
-                      echo 'A newer stable release superseded this update.'
-                      exit 0
-                    fi
-                    mkdir -p Formula
-                    cp "$RUNNER_TEMP/formula/$PACKAGE.rb" "$FORMULA"
-                    git add -- "$FORMULA"
+                    status=0
+                    ruby scripts/package-update.rb check || status=$?
+                    if [ "$status" = 3 ]; then exit 0; fi
+                    if [ "$status" != 0 ]; then exit "$status"; fi
+                    mkdir -p "$(dirname "$RECIPE")"
+                    cp "$RUNNER_TEMP/candidate/recipe.rb" "$RECIPE"
+                    git add -- "$RECIPE"
                     if git diff --cached --quiet; then exit 0; fi
                     git commit -m "chore: update $PACKAGE to $TAG"
                     if git push origin "HEAD:$DEFAULT_BRANCH"; then exit 0; fi
                   done
-                  echo 'Unable to publish formula after five attempts.' >&2
                   exit 1

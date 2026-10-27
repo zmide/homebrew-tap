@@ -51,8 +51,8 @@ test('checked-in formula is reproducible from its version and checksums', async 
 	const version = /version "([\d.]+)"/.exec(formula)[1];
 	const entries = [...formula.matchAll(/url "[^"\n]+\/([^/"\n]+)"\n\s+sha256 "([a-f0-9]{64})"/g)].map(([, name, sum]) => `${sum}  ${name}`);
 	assert.equal(entries.length, 4);
-	// Relocating the generator must not require republishing an unchanged recipe.
-	const withoutHeader = (value) => value.slice(value.indexOf('\n') + 1);
+	// Tap metadata and generator relocation do not change the generated Ruby body.
+	const withoutHeader = (value) => value.replace(/^(?:#.*\n)+/, '');
 	assert.equal(withoutHeader(formula), withoutHeader(renderFormula(`v${version}`, entries.join('\n'))));
 });
 

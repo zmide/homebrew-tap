@@ -24,6 +24,16 @@ jobs:
               with:
                   node-version-file: .nvmrc
             - run: node --test scripts/*.test.mjs scripts/packages/*.test.mjs scripts/catalog/*.test.mjs
+            - uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: '3.3'
+            - name: Test generic updater
+              # JWT is pinned; the updater does not implement cryptography itself.
+              env:
+                  JWT_VERSION: '2.10.2'
+              run: |
+                  gem install jwt --version "$JWT_VERSION" --no-document
+                  ruby scripts/package-update.test.rb
             - name: Check Ruby syntax
               shell: bash
               run: |
