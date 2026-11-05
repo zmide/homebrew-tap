@@ -3,6 +3,7 @@
 require "minitest/autorun"
 require "tmpdir"
 require "openssl"
+require "yaml"
 require_relative "package-update"
 require_relative "notify-package-update"
 
@@ -89,6 +90,13 @@ class PackageUpdateTest < Minitest::Test
     assert_equal "owner/tool", verify.fetch("repository")
     @request["recipe"] += "# substitution\n"
     assert_raises(JWT::InvalidAudError) { verify }
+  end
+
+  def test_workflow_preserves_dependency_check_ruby_interpolation
+    workflow = YAML.load_file(File.join(__dir__, "../.github/workflows/update.yml"))
+    steps = workflow.fetch("jobs").fetch("test").fetch("steps")
+    step = steps.find { |item| item["name"] == "Verify updater Ruby dependencies" }
+    assert_equal %q(ruby -r ./scripts/package-update-auth.rb -e 'puts "JWT #{JWT::VERSION::STRING}"'), step.fetch("run").strip
   end
 
   def test_algorithm_and_signature_are_enforced

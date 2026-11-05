@@ -98,7 +98,8 @@ jobs:
                   ruby-version: '3.3'
             - run: gem install jwt --version 2.10.2 --no-document
             - name: Verify updater Ruby dependencies
-              run: ruby -r ./scripts/package-update-auth.rb -e 'puts "JWT #{JWT::VERSION::STRING}"'
+              run: |
+                  ruby -r ./scripts/package-update-auth.rb -e 'puts "JWT #{JWT::VERSION::STRING}"'
             - name: Register, validate and test candidate
               shell: bash
               run: |
