@@ -91,11 +91,14 @@ jobs:
               with:
                   name: package-candidate
                   path: ${{ runner.temp }}/candidate
+            # Homebrew setup changes PATH; select the updater's Ruby afterwards.
+            - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
             - uses: ruby/setup-ruby@v1
               with:
                   ruby-version: '3.3'
             - run: gem install jwt --version 2.10.2 --no-document
-            - uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
+            - name: Verify updater Ruby dependencies
+              run: ruby -r ./scripts/package-update-auth.rb -e 'puts "JWT #{JWT::VERSION::STRING}"'
             - name: Register, validate and test candidate
               shell: bash
               run: |
