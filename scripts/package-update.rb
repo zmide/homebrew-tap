@@ -44,6 +44,42 @@ module PackageUpdate
     versions.first
   end
 
+  def self.formula_class(name)
+    name.capitalize.gsub(/[-_.\s][a-zA-Z0-9]/) { |match| match[-1].upcase }.tr("+", "x").sub(/(.)@(\d)/, '\1AT\2')
+  end
+
+  # Only declarations and explicit self-references change; never rewrite asset URLs.
+  def self.versioned_recipe(text, package, kind)
+    release_version = recipe_version(text)
+    ensure!(/\A\d+\.\d+\.\d+(?:-[a-z]+\.?\d+)?\z/.match?(release_version), "Unsupported fixed version")
+    name = "#{package}@#{release_version}"
+    if kind == "cask"
+      ensure!(recipe_kind(text, package) == kind, "Cask declaration mismatch")
+      result = text.sub(/^cask "#{Regexp.escape(package)}" do$/, "cask \"#{name}\" do")
+    else
+      original_class = formula_class(package)
+      ensure!(text.scan(/^class #{Regexp.escape(original_class)} < Formula$/).length == 1, "Formula class mismatch")
+      ensure!(text.scan(/\b#{Regexp.escape(original_class)}\b/).length == 1, "Self-referencing formula requires explicit versioning support")
+      result = text.sub(/^class #{Regexp.escape(formula_class(package))} < Formula$/, "class #{formula_class(name)} < Formula")
+      # Versioned formulae must not overwrite the default executable links.
+      unless result.match?(/^  keg_only\b/)
+        result = result.sub(/^(class [^\n]+\n)/, "\\1  keg_only :versioned_formula\n")
+      end
+    end
+    result = result.gsub(/(brew (?:services (?:start|stop|restart)|upgrade(?: --cask)?) [A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/)#{Regexp.escape(package)}(?=\s|$)/, "\\1#{name}")
+    result
+  end
+
+  def self.versioned_target(package, kind, text)
+    "#{kind == 'cask' ? 'Casks' : 'Formula'}/#{package}@#{recipe_version(text)}.rb"
+  end
+
+  def self.check_versioned_target!(root, target, text)
+    path = root.join(target)
+    ensure!(!path.symlink? && !path.parent.symlink?, "Symlink recipes are not supported")
+    ensure!(!path.exist? || path.binread == text, "Fixed version already exists with different content")
+  end
+
   def self.existing(root, package)
     paths = %w[Formula Casks Cask].map { |dir| root.join(dir, "#{package}.rb") }
     paths.each { |path| ensure!(!path.symlink? && !path.parent.symlink?, "Symlink recipes are not supported") }
@@ -241,18 +277,28 @@ module PackageUpdate
         # Legacy generators may differ only in historical generated comments.
         # Preserve their original idempotency without permitting direct replacement.
         ensure!(!direct || previous == text, "Same version has different content; publish a new version")
-        return { "current" => "false" }
+        fixed_target = versioned_target(package, kind, text)
+        if root.join(fixed_target).exist?
+          check_versioned_target!(root, fixed_target, versioned_recipe(text, package, kind))
+          return { "current" => "false" }
+        end
       end
     end
+    fixed_text = versioned_recipe(text, package, kind)
+    fixed_target = versioned_target(package, kind, text)
+    check_versioned_target!(root, fixed_target, fixed_text)
     candidate = {
       "mode" => request.fetch("mode"), "package" => package, "tag" => tag,
       "repository" => repository, "repositoryId" => identity, "recipe" => target,
       "kind" => kind, "version" => normalized, "releaseId" => release.fetch("id"),
       "sha256" => Digest::SHA256.hexdigest(text),
       "previousSha256" => previous && Digest::SHA256.hexdigest(previous),
-      "assets" => snapshot(release)
+      "assets" => snapshot(release),
+      "versionedRecipe" => fixed_target,
+      "versionedSha256" => Digest::SHA256.hexdigest(fixed_text)
     }
     directory.join("recipe.rb").binwrite(text)
+    directory.join("versioned-recipe.rb").binwrite(fixed_text)
     directory.join("candidate.json").write(JSON.generate(candidate))
     candidate.merge("current" => "true", "matrix" => JSON.generate(kind == "cask" ? ["macos-15"] : ["macos-15", "ubuntu-latest"]))
   end
@@ -280,6 +326,11 @@ module PackageUpdate
     ensure!(kind == candidate.fetch("kind") && recipe_version(text) == tag.delete_prefix("v"), "Candidate identity/version mismatch")
     target = "#{kind == 'cask' ? 'Casks' : 'Formula'}/#{package}.rb"
     ensure!(target == candidate.fetch("recipe"), "Unsafe candidate target")
+    fixed_text = versioned_recipe(text, package, kind)
+    fixed_target = versioned_target(package, kind, text)
+    ensure!(candidate.fetch("versionedRecipe") == fixed_target, "Unsafe fixed version target")
+    ensure!(directory.join("versioned-recipe.rb").binread == fixed_text && candidate.fetch("versionedSha256") == Digest::SHA256.hexdigest(fixed_text), "Fixed version candidate modified")
+    check_versioned_target!(root, fixed_target, fixed_text)
     authorize!(root, request, kind, text: direct ? text : nil)
     path = existing(root, package)
     previous = path&.binread
@@ -311,7 +362,7 @@ module PackageUpdate
     when "prepare"
       outputs = prepare(root, directory, request)
       File.open(ENV.fetch("GITHUB_OUTPUT"), "a") do |file|
-        %w[current recipe kind version matrix].each do |key|
+        %w[current recipe kind version matrix versionedRecipe].each do |key|
           value = outputs.fetch(key, "")
           ensure!(!value.match?(/[\r\n]/), "Unsafe workflow output")
           file.puts("#{key}=#{value}")

@@ -1,10 +1,11 @@
 import config from '../../../tap.config.json';
 import entries from '../../.generated/search-index.json';
+import { packageRoute, visiblePackages } from '../../../shared/homebrew-package-routes.mjs';
 
 export default defineEventHandler((event) => {
 	setHeader(event, 'content-type', 'application/xml; charset=utf-8');
 	const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
-	const paths = ['/', '/formula/', '/cask/', ...entries.map((entry) => `/${entry.kind}/${encodeURIComponent(entry.name)}/`)];
+	const paths = ['/', '/formula/', '/cask/', ...visiblePackages(entries).map((entry) => packageRoute(entry.kind, entry.name)!)];
 	const base = process.env.NUXT_APP_BASE_URL || config.site.basePath;
 	const urls = config.i18n.locales.flatMap((locale) =>
 		paths.map((path) => `${config.site.origin}${base.replace(/\/$/, '')}${locale === config.i18n.defaultLocale ? '' : `/${locale}`}${path}`),

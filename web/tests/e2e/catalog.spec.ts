@@ -1,4 +1,4 @@
-import { appConfig, entries, expect, expectRows, openPage, ordered, packageRoute, route, selectedEntry, snapshot, test } from './fixtures';
+import { allEntries, appConfig, entries, expect, expectRows, openPage, ordered, packageRoute, route, selectedEntry, snapshot, test } from './fixtures';
 
 test('home shows only real generated packages and the configured tap command', async ({ page }) => {
 	await openPage(page);
@@ -8,7 +8,7 @@ test('home shows only real generated packages and the configured tap command', a
 	await expect(page.locator('.tap-banner code')).toHaveText(`brew tap ${appConfig.tap}`);
 
 	const nativeIdentities = [...snapshot.formulae.map((item) => `formula:${item.name}`), ...snapshot.casks.map((item) => `cask:${item.token}`)].sort();
-	expect(entries.map((entry) => `${entry.kind}:${entry.name}`).sort()).toEqual(nativeIdentities);
+	expect(allEntries.map((entry) => `${entry.kind}:${entry.name}`).sort()).toEqual(nativeIdentities);
 });
 
 test('search synchronizes the URL, reports an empty result, and clears back to recent packages', async ({ page }) => {

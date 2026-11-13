@@ -3,17 +3,17 @@ import PackageBrowser from '../components/catalog/package-browser';
 import PackageDetail from '../components/catalog/package-detail';
 import { useCatalogLocale } from '../composables/locale';
 import { config } from '../lib/config';
-import type { PackageKind } from '../lib/homebrew/types';
-import { index, loadPackage } from '../lib/catalog-data';
+import { index, visibleIndex, loadPackage } from '../lib/catalog-data';
+import { parsePackageRoute, versionedPackage } from '../../shared/homebrew-package-routes.mjs';
+import { isRecord } from '../lib/homebrew/helpers';
 
 export default defineComponent({
 	name: 'CatalogPage',
 	async setup() {
 		const { t, barePath } = useCatalogLocale();
-		const segments = barePath.value.split('/').filter(Boolean);
-		const kind = segments[0] as PackageKind | undefined;
-		const name = segments[1] ? decodeURIComponent(segments[1]) : undefined;
-		if (segments.length > 2 || (kind && !['formula', 'cask'].includes(kind))) throw createError({ statusCode: 404, statusMessage: 'Package not found' });
+		const parsed = parsePackageRoute(barePath.value);
+		if (!parsed) throw createError({ statusCode: 404, statusMessage: 'Package not found' });
+		const { kind, name } = parsed;
 		const detail = Boolean(name);
 		const entry = name ? index.find((item) => item.kind === kind && item.name === name) : undefined;
 		if (detail && !entry) throw createError({ statusCode: 404, statusMessage: 'Package not found' });
@@ -24,11 +24,15 @@ export default defineComponent({
 			ogTitle: title,
 			ogDescription: () => entry?.desc || config.brand.description,
 			ogType: 'website',
+			robots: name && versionedPackage(name) ? 'noindex,follow' : undefined,
 		});
 		const { data: item } = await useAsyncData(`package:${kind || 'all'}:${name || 'index'}`, async () => {
 			if (!name) return null;
 			const value = await loadPackage(kind!, name);
 			if (!value) throw createError({ statusCode: 404 });
+			const fixed = versionedPackage(name);
+			const actual = kind === 'cask' ? value.version : isRecord(value.versions) ? value.versions.stable : undefined;
+			if (fixed?.fixed && actual !== fixed.version) throw createError({ statusCode: 404, statusMessage: 'Fixed version mismatch' });
 			return value;
 		});
 		return () => (
@@ -38,7 +42,7 @@ export default defineComponent({
 						<PackageDetail kind={kind!} item={item.value} updatedAt={entry?.updatedAt || undefined} links={config.links?.[`${kind}:${entry?.fullName}`]} />
 					</div>
 				) : (
-					<PackageBrowser entries={index} kind={kind} />
+					<PackageBrowser entries={visibleIndex} kind={kind} />
 				)}
 			</>
 		);

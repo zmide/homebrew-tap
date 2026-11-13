@@ -94,6 +94,16 @@ type Manifest = {
 
 Route paths are relative, URL-encoded paths such as `formula/tool%402%2Bkit`. Join `${config.site.basePath}${route.path}/` when creating links or prerender routes. Nuxt output must remain `web/.output/public`, not nested under the deployment base path. Verification accepts encoded or decoded static route directories, compares every API object to the original native JSON, checks counts/provenance, validates every badge against its native package, and rejects missing, modified or stale badge/API endpoints.
 
+The native index and manifest counts include every versioned recipe. Discovery
+surfaces use `visiblePackages` from `shared/homebrew-package-routes.mjs` to select
+one representative per kind/base name, preferring the unversioned recipe. Full
+fixed versions additionally prerender `/<kind>/<base>/v/<version>/`; legacy native
+name routes remain accessible. Verification requires both routes. Version-line
+recipes such as `foo@2` retain native-name URLs and are not fixed-version aliases.
+Badge endpoints always retain the native recipe identity, independently of page
+canonical URLs. Generated JSON remains derived data, not an additional source of
+package descriptions.
+
 ## Version badges
 
 `shared/homebrew-version.mjs` is used by catalog search, badge generation, detail

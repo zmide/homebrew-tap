@@ -1,5 +1,6 @@
 import type { BottleRow, Dependency, DependencyGroup, HomebrewPackage, NativeRecord, PackageKind, PackageNotice } from './types';
 import { packageVersion } from '../../../shared/homebrew-version.mjs';
+import { packageRoute } from '../../../shared/homebrew-package-routes.mjs';
 
 export function isRecord(value: unknown): value is NativeRecord {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -89,7 +90,7 @@ export function safeExternalUrl(value: unknown): string | undefined {
 }
 
 export function packagePath(kind: PackageKind, name: string): string | undefined {
-	return validPackageName(name) ? `/${kind}/${encodeURIComponent(name)}/` : undefined;
+	return validPackageName(name) ? packageRoute(kind, name) : undefined;
 }
 
 export function apiPath(kind: PackageKind, name: string): string | undefined {

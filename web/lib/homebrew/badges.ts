@@ -1,5 +1,5 @@
 import { packageVersion } from '../../../shared/homebrew-version.mjs';
-import { fullName, packageName, packagePath } from './helpers';
+import { fullName, packageName, packagePath, validPackageName } from './helpers';
 import type { HomebrewPackage, PackageKind } from './types';
 
 export const badgeStyles = ['flat', 'flat-square', 'for-the-badge'] as const;
@@ -31,8 +31,7 @@ export function normalizeBadgeOptions(options: BadgeOptions): BadgeOptions {
 }
 
 export function badgePath(kind: PackageKind, name: string): string | undefined {
-	const path = packagePath(kind, name);
-	return path ? `/badges${path.slice(0, -1)}.json` : undefined;
+	return validPackageName(name) ? `/badges/${kind}/${encodeURIComponent(name)}.json` : undefined;
 }
 
 /** Pure URL builder. The caller supplies the effective deployment base path. */

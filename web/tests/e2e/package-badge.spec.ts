@@ -1,7 +1,7 @@
-import { appConfig, basePath, entries, expect, openPage, packageRoute, selectedEntry, test } from './fixtures';
+import { allEntries, appConfig, basePath, expect, openPage, packageRoute, selectedEntry, test } from './fixtures';
 
 test('badge metadata is published independently of native APIs', async ({ request }) => {
-	for (const entry of entries) {
+	for (const entry of allEntries) {
 		const response = await request.get(`${basePath}badges/${entry.kind}/${encodeURIComponent(entry.name)}.json`);
 		expect(response.status()).toBe(200);
 		expect(response.headers()['content-type']).toContain('application/json');

@@ -22,6 +22,38 @@ instructions before installing.
 
 ## Develop and build
 
+### Fixed versions
+
+Successful automated releases publish both the current recipe (`foo.rb`) and
+a standard versioned recipe (`foo@1.2.0.rb`) in one commit. Fixed recipes are not
+silently replaced. Formulae use `keg_only :versioned_formula` unless the upstream
+recipe already declares a keg-only policy; use their `opt/bin` path rather than
+assuming they replace the default executable. Cask versions can share application
+paths and are not promised to install side by side.
+
+```sh
+brew install zmide/tap/oci-mirror-proxy@1.1.0
+```
+
+The catalog lists one representative per software and does not expose a version
+selector or historical search results. Fixed recipes remain directly accessible:
+
+- `/formula/oci-mirror-proxy/v/1.1.0/`
+- `/cask/squirrel/v/1.1.2-beta5/`
+
+Unknown fixed versions return 404, never the current release. Legacy `name@version`
+detail URLs remain accessible with canonical links to the `/v/` URL. Historical
+pages are omitted from the sitemap when a current recipe exists and marked
+`noindex,follow`. Their Shields endpoint, preview and copied Markdown use the
+versioned recipe, and Markdown links back to the fixed-version page. API and
+badge endpoints retain native recipe names (URL-encode `@` as `%40`).
+
+All descriptions, versions and download metadata come from the recipes through
+Homebrew; no hand-maintained archive JSON is required. Binaries stay upstream,
+and fixed recipes do not freeze dependencies or guarantee future compatibility.
+
+### Local development
+
 Use macOS with Homebrew, especially for Casks. Node.js is pinned in `.nvmrc`
 (`24.22.1`); pnpm is pinned in `package.json` (`10.20.0`).
 

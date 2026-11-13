@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { test as base, expect, type ConsoleMessage, type Page } from '@playwright/test';
 import type { CatalogEntry } from '../../lib/search';
 import { appConfig, basePath } from './settings.mjs';
+import { packageRoute as canonicalPackageRoute, visiblePackages } from '../../../shared/homebrew-package-routes.mjs';
 
 function generated(name: string): unknown {
 	try {
@@ -15,7 +16,8 @@ function generated(name: string): unknown {
 
 const index = generated('search-index.json');
 if (!Array.isArray(index)) throw new Error('The generated search index must be an array');
-export const entries = index as CatalogEntry[];
+export const allEntries = index as CatalogEntry[];
+export const entries = visiblePackages(allEntries);
 export type NativeRecord = Record<string, unknown>;
 export const snapshot = generated('info.v2.json') as { formulae: NativeRecord[]; casks: NativeRecord[] };
 if (!Array.isArray(snapshot.formulae) || !Array.isArray(snapshot.casks)) throw new Error('A native Homebrew v2 snapshot with formulae and casks arrays is required');
@@ -28,7 +30,7 @@ export function route(path = '', locale = appConfig.i18n.defaultLocale): string 
 }
 
 export function packageRoute(entry: CatalogEntry, locale = appConfig.i18n.defaultLocale): string {
-	return route(`${entry.kind}/${encodeURIComponent(entry.name)}/`, locale);
+	return route(canonicalPackageRoute(entry.kind, entry.name)!, locale);
 }
 
 export function ordered(items: CatalogEntry[], sort = 'updated'): CatalogEntry[] {

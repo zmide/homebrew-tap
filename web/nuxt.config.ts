@@ -1,12 +1,15 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import config from '../tap.config.json';
+import { packageRoute } from '../shared/homebrew-package-routes.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const indexFile = `${root}.generated/search-index.json`;
 const index = existsSync(indexFile) ? JSON.parse(readFileSync(indexFile, 'utf8')) : [];
 const entries = Array.isArray(index) ? index : index.entries || [];
-const routes = ['/', '/formula/', '/cask/', ...entries.map((item: { kind: string; name: string }) => `/${item.kind}/${encodeURIComponent(item.name)}/`)];
+const routes = [
+	...new Set(['/', '/formula/', '/cask/', ...entries.flatMap((item: { kind: string; name: string }) => [`/${item.kind}/${item.name}/`, packageRoute(item.kind, item.name)!])]),
+];
 const baseURL = process.env.NUXT_APP_BASE_URL || config.site.basePath;
 
 export default defineNuxtConfig({
@@ -32,6 +35,7 @@ export default defineNuxtConfig({
 	},
 	typescript: { strict: true, tsConfig: { compilerOptions: { jsx: 'preserve', jsxImportSource: 'vue' } } },
 	nitro: {
+		externals: { inline: [fileURLToPath(new URL('../shared/', import.meta.url))] },
 		publicAssets: [{ dir: `${root}.generated/public`, maxAge: 0 }],
 		prerender: {
 			routes: [

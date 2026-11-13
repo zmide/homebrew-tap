@@ -6,6 +6,7 @@ import { main, options } from './cli.mjs';
 import { arrayKeys, kinds, nativeName, routePath, validateNative } from './native.mjs';
 import { sha256 } from './sources.mjs';
 import { makeBadge } from './badges.mjs';
+import { packageRoute } from '../../shared/homebrew-package-routes.mjs';
 
 const json = async (path) => JSON.parse(await readFile(path, 'utf8'));
 
@@ -80,6 +81,12 @@ export async function verifyOutput({
 				const prefix = locale === config.i18n.defaultLocale ? '' : `${locale}/`;
 				const htmlPaths = [...new Set([`${prefix}${route}/index.html`, `${prefix}${kind}/${name}/index.html`, `${prefix}${route}.html`, `${prefix}${kind}/${name}.html`])];
 				assert((await Promise.all(htmlPaths.map((path) => exists(safePath(outputDir, path))))).some(Boolean), `Missing prerendered route: ${basePath}${prefix}${route}/`);
+				const canonical = packageRoute(kind, name).slice(1, -1);
+				const versionPaths = [`${prefix}${canonical}/index.html`, `${prefix}${decodeURIComponent(canonical)}/index.html`, `${prefix}${canonical}.html`];
+				assert(
+					(await Promise.all(versionPaths.map((path) => exists(safePath(outputDir, path))))).some(Boolean),
+					`Missing canonical version route: ${basePath}${prefix}${canonical}/`,
+				);
 			}
 			const url = new URL(`${basePath}${route}/`, config.site.origin);
 			assert(url.pathname.startsWith(basePath) && decodeURIComponent(url.pathname) === `${basePath}${kind}/${name}/`, `Unsafe route URL: ${route}`);

@@ -35,6 +35,7 @@ jobs:
             version: ${{ steps.candidate.outputs.version }}
             recipe: ${{ steps.candidate.outputs.recipe }}
             kind: ${{ steps.candidate.outputs.kind }}
+            versioned_recipe: ${{ steps.candidate.outputs.versionedRecipe }}
             matrix: ${{ steps.candidate.outputs.matrix }}
         steps:
             - uses: actions/checkout@v4
@@ -63,6 +64,7 @@ jobs:
                   name: package-candidate
                   path: |
                       ${{ runner.temp }}/candidate/recipe.rb
+                      ${{ runner.temp }}/candidate/versioned-recipe.rb
                       ${{ runner.temp }}/candidate/candidate.json
                   if-no-files-found: error
                   retention-days: 1
@@ -83,6 +85,7 @@ jobs:
             RECIPE: ${{ needs.generate.outputs.recipe }}
             KIND: ${{ needs.generate.outputs.kind }}
             VERSION: ${{ needs.generate.outputs.version }}
+            VERSIONED_RECIPE: ${{ needs.generate.outputs.versioned_recipe }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -108,25 +111,36 @@ jobs:
                   [[ "$tap" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*/[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]
                   brew tap --custom-remote "$tap" "$GITHUB_WORKSPACE"
                   if brew command trust >/dev/null 2>&1; then brew trust "$tap"; fi
-                  target="$(brew --repository "$tap")/$RECIPE"
-                  mkdir -p "$(dirname "$target")"
-                  cp "$RUNNER_TEMP/candidate/recipe.rb" "$target"
-                  cmp "$RUNNER_TEMP/candidate/recipe.rb" "$target"
-                  full_name="$tap/$PACKAGE"
-                  brew info --json=v2 "--$KIND" "$full_name" > "$RUNNER_TEMP/info.json"
-                  ruby scripts/package-update.rb validate-info "$RUNNER_TEMP/info.json"
-                  if [ "$KIND" = cask ]; then
-                    brew style --cask "$full_name"
-                    brew audit --cask "$full_name"
-                    brew fetch --cask "$full_name"
-                    brew install --cask "$full_name"
-                    brew list --cask "$full_name"
-                    brew uninstall --cask "$full_name"
-                  else
-                    brew install --formula "$full_name"
-                    brew test "$full_name"
-                    if ruby -rjson -e 'exit(JSON.parse(File.read(ARGV[0])).fetch("formulae")[0]["service"] ? 0 : 1)' "$RUNNER_TEMP/info.json"; then brew services info "$full_name"; fi
-                  fi
+                  for variant in current fixed; do
+                    recipe="$RECIPE"
+                    source="$RUNNER_TEMP/candidate/recipe.rb"
+                    name="$PACKAGE"
+                    if [ "$variant" = fixed ]; then
+                      recipe="$VERSIONED_RECIPE"
+                      source="$RUNNER_TEMP/candidate/versioned-recipe.rb"
+                      name="$PACKAGE@$VERSION"
+                    fi
+                    target="$(brew --repository "$tap")/$recipe"
+                    mkdir -p "$(dirname "$target")"
+                    cp "$source" "$target"
+                    cmp "$source" "$target"
+                    full_name="$tap/$name"
+                    brew info --json=v2 "--$KIND" "$full_name" > "$RUNNER_TEMP/info.json"
+                    PACKAGE="$name" ruby scripts/package-update.rb validate-info "$RUNNER_TEMP/info.json"
+                    if [ "$KIND" = cask ]; then
+                      brew style --cask "$full_name"
+                      brew audit --cask "$full_name"
+                      brew fetch --cask "$full_name"
+                      brew install --cask "$full_name"
+                      brew list --cask "$full_name"
+                      brew uninstall --cask "$full_name"
+                    else
+                      brew install --formula "$full_name"
+                      brew test "$full_name"
+                      if ruby -rjson -e 'exit(JSON.parse(File.read(ARGV[0])).fetch("formulae")[0]["service"] ? 0 : 1)' "$RUNNER_TEMP/info.json"; then brew services info "$full_name"; fi
+                      brew uninstall --formula "$full_name"
+                    fi
+                  done
 
     publish:
         needs: [generate, test]
@@ -138,6 +152,7 @@ jobs:
             actions: read
         env:
             RECIPE: ${{ needs.generate.outputs.recipe }}
+            VERSIONED_RECIPE: ${{ needs.generate.outputs.versioned_recipe }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -167,8 +182,10 @@ jobs:
                     if [ "$status" = 3 ]; then exit 0; fi
                     if [ "$status" != 0 ]; then exit "$status"; fi
                     mkdir -p "$(dirname "$RECIPE")"
-                    cp "$RUNNER_TEMP/candidate/recipe.rb" "$RECIPE"
-                    git add -- "$RECIPE"
+                  cp "$RUNNER_TEMP/candidate/recipe.rb" "$RECIPE"
+                  mkdir -p "$(dirname "$VERSIONED_RECIPE")"
+                  cp "$RUNNER_TEMP/candidate/versioned-recipe.rb" "$VERSIONED_RECIPE"
+                  git add -- "$RECIPE" "$VERSIONED_RECIPE"
                     if git diff --cached --quiet; then exit 0; fi
                     git commit -m "chore: update $PACKAGE to $TAG"
                     if git push origin "HEAD:$DEFAULT_BRANCH"; then exit 0; fi

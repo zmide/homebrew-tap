@@ -92,6 +92,49 @@ class PackageUpdateTest < Minitest::Test
     assert_raises(JWT::InvalidAudError) { verify }
   end
 
+  def test_fixed_candidate_is_derived_and_tamper_checked
+    outputs = prepare
+    assert_equal "Formula/tool@1.2.0.rb", outputs.fetch("versionedRecipe")
+    fixed = @directory.join("versioned-recipe.rb").read
+    assert_includes fixed, "class ToolAT120 < Formula"
+    assert_includes fixed, "keg_only :versioned_formula"
+    assert_includes fixed, '/download/v1.2.0/tool.tar.gz'
+    assert check
+    @directory.join("versioned-recipe.rb").write(fixed + "# modified\n")
+    assert_raises(ArgumentError) { check }
+  end
+
+  def test_fixed_target_is_immutable_and_checked_again_before_publish
+    prepare
+    @root.join("Formula").mkpath
+    target = @root.join("Formula/tool@1.2.0.rb")
+    target.write("different content")
+    assert_raises(ArgumentError) { check }
+    assert_raises(ArgumentError) { prepare }
+    target.write(@directory.join("versioned-recipe.rb").read)
+    assert check
+  end
+
+  def test_fixed_formula_class_and_cask_token_conversion
+    assert_equal "OciMirrorProxyAT130Beta1", PackageUpdate.formula_class("oci-mirror-proxy@1.3.0-beta.1")
+    cask = "cask \"tool\" do\n  version \"1.2.0\"\n  url \"https://example.com/tool.zip\"\nend\n"
+    fixed = PackageUpdate.versioned_recipe(cask, "tool", "cask")
+    assert_includes fixed, 'cask "tool@1.2.0" do'
+    assert_includes fixed, 'https://example.com/tool.zip'
+    refute_includes fixed, "keg_only"
+    assert_raises(ArgumentError) { PackageUpdate.versioned_recipe(recipe.sub("class Tool", "class Wrong"), "tool", "formula") }
+    assert_raises(ArgumentError) { PackageUpdate.versioned_recipe(recipe.sub("end\n", "  Tool.new\nend\n"), "tool", "formula") }
+  end
+
+  def test_same_current_version_can_seed_missing_fixed_recipe
+    previous(recipe)
+    assert_equal "true", prepare.fetch("current")
+    @root.join("Formula/tool@1.2.0.rb").write(@directory.join("versioned-recipe.rb").read)
+    assert_equal "false", prepare.fetch("current")
+    @root.join("Formula/tool@1.2.0.rb").write("different content")
+    assert_raises(ArgumentError) { prepare }
+  end
+
   def test_workflow_preserves_dependency_check_ruby_interpolation
     workflow = YAML.load_file(File.join(__dir__, "../.github/workflows/update.yml"))
     steps = workflow.fetch("jobs").fetch("test").fetch("steps")
@@ -213,6 +256,7 @@ class PackageUpdateTest < Minitest::Test
     assert check
     @root.join("Formula").mkpath
     @root.join("Formula/tool.rb").binwrite(@directory.join("recipe.rb").binread)
+    @root.join("Formula/tool@1.2.0.rb").binwrite(@directory.join("versioned-recipe.rb").binread)
     assert check
     assert_equal "false", prepare.fetch("current")
   end

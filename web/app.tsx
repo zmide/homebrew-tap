@@ -4,6 +4,7 @@ import SelectMenu from './components/catalog/select-menu';
 import { NuxtLink, NuxtPage } from '#components';
 import { useCatalogLocale } from './composables/locale';
 import { config, withBase } from './lib/config';
+import { packageRoute, parsePackageRoute } from '../shared/homebrew-package-routes.mjs';
 
 export default defineComponent({
 	setup() {
@@ -24,7 +25,11 @@ export default defineComponent({
 			media.addEventListener('change', applyTheme);
 		});
 		onBeforeUnmount(() => media?.removeEventListener('change', applyTheme));
-		const canonical = computed(() => `${config.site.origin}${withBase(localPath(barePath.value))}`);
+		const canonicalPath = computed(() => {
+			const parsed = parsePackageRoute(barePath.value);
+			return parsed?.name ? packageRoute(parsed.kind!, parsed.name)! : barePath.value;
+		});
+		const canonical = computed(() => `${config.site.origin}${withBase(localPath(canonicalPath.value))}`);
 		useHead(() => ({
 			htmlAttrs: { lang: locale.value },
 			link: [
@@ -33,7 +38,7 @@ export default defineComponent({
 					rel: 'alternate' as const,
 					type: 'text/html',
 					hreflang: language,
-					href: `${config.site.origin}${withBase(language === config.i18n.defaultLocale ? barePath.value : `/${language}${barePath.value}`)}`,
+					href: `${config.site.origin}${withBase(language === config.i18n.defaultLocale ? canonicalPath.value : `/${language}${canonicalPath.value}`)}`,
 				})),
 			],
 		}));

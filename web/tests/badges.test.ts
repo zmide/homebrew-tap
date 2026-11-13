@@ -7,6 +7,23 @@ const site = { origin: 'https://example.com', basePath: '/tap/' };
 const badge = (options: Partial<BadgeOptions> = {}) => packageBadge('formula', formula, { ...defaultBadgeOptions, ...options }, site)!;
 
 describe('package badge URLs', () => {
+	it('pins historical endpoints and copied Markdown to the fixed recipe and npm-style page', () => {
+		for (const kind of ['formula', 'cask'] as const) {
+			const item: HomebrewPackage =
+				kind === 'formula'
+					? { name: 'foo@1.2.0', full_name: 'example/tools/foo@1.2.0', versions: { stable: '1.2.0' }, revision: 1 }
+					: { token: 'foo@1.2.0', name: ['Foo'], full_token: 'example/tools/foo@1.2.0', version: '1.2.0' };
+			const value = packageBadge(kind, item, defaultBadgeOptions, site)!;
+			expect(value.message).toBe(kind === 'formula' ? '1.2.0_1' : '1.2.0');
+			expect(value.endpointUrl).toBe(`https://example.com/tap/badges/${kind}/foo%401.2.0.json`);
+			expect(new URL(value.imageUrl).searchParams.get('url')).toBe(value.endpointUrl);
+			expect(value.detailUrl).toBe(`https://example.com/tap/${kind}/foo/v/1.2.0/`);
+			expect(value.markdown).toBe(`[![${value.alt}](${value.imageUrl})](${value.detailUrl})`);
+			const current: HomebrewPackage = kind === 'formula' ? { name: 'foo', versions: { stable: '9.0.0' } } : { token: 'foo', name: ['Foo'], version: '9.0.0' };
+			expect(packageBadge(kind, current, defaultBadgeOptions, site)!.endpointUrl).not.toBe(value.endpointUrl);
+			expect(packageBadge(kind, item, defaultBadgeOptions, site)).toEqual(value);
+		}
+	});
 	it('encodes each path segment, separates kinds and rejects unsafe names', () => {
 		expect(badgePath('formula', formula.name)).toBe('/badges/formula/tool%402%2Bkit.1.json');
 		expect(badgePath('cask', formula.name)).toBe('/badges/cask/tool%402%2Bkit.1.json');
