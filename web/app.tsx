@@ -54,11 +54,11 @@ export default defineComponent({
 		return () => (
 			<div class="site-shell">
 				<a class="skip-link" href="#main">
-					{locale.value === 'en' ? 'Skip to content' : '跳转到正文'}
+					{t('nav.skipToContent')}
 				</a>
 				<header class="site-header">
 					<NuxtLink class="brand" to={localPath('/')} aria-label={`${config.brand.name} ${t('nav.home')}`}>
-						<img class="brand-mark" src={withBase('/homebrew.svg')} alt="Homebrew" width="32" height="32" />
+						<img class="brand-mark" src={withBase('/homebrew.svg')} alt="" width="32" height="32" />
 						<span>
 							{config.brand.name}
 							<span class="brand-suffix"> / tap</span>

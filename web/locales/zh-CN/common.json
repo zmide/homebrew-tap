@@ -1,5 +1,5 @@
 {
-	"nav": { "formula": "Formula", "cask": "Cask", "github": "在 GitHub 查看", "language": "切换语言", "theme": "颜色主题", "home": "首页" },
+	"nav": { "formula": "Formula", "cask": "Cask", "github": "在 GitHub 查看", "language": "切换语言", "theme": "颜色主题", "home": "首页", "skipToContent": "跳转到正文" },
 	"home": {
 		"recent": "最近更新",
 		"browse": "浏览全部",

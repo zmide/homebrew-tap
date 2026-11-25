@@ -1,15 +1,18 @@
 import { defineComponent } from 'vue';
-import { config, withBase } from './lib/config';
+import { useCatalogLocale } from './composables/locale';
+import { withBase } from './lib/config';
 
 export default defineComponent({
 	setup() {
+		const { locale, t, localPath } = useCatalogLocale();
+		useHead(() => ({ htmlAttrs: { lang: locale.value } }));
 		return () => (
 			<main class="error-page">
 				<span class="eyebrow">404</span>
-				<h1>Page not found</h1>
-				<p>The requested page does not exist.</p>
-				<a class="back-link" href={withBase('/')}>
-					← Back to {config.brand.name} / tap
+				<h1>{t('error.title')}</h1>
+				<p>{t('error.description')}</p>
+				<a class="back-link" href={withBase(localPath('/'))}>
+					<span aria-hidden="true">←</span> {t('error.back')}
 				</a>
 			</main>
 		);

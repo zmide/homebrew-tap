@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { test as playwrightTest } from '@playwright/test';
 import { entries, expect, openPage, packageRoute, route, selectedEntry, snapshot, test } from './fixtures';
 import { basePath, baseURL } from './settings.mjs';
 
@@ -96,6 +97,20 @@ test('missing routes and APIs are real 404s rather than an index.html SPA fallba
 	if (basePath !== '/') {
 		expect((await request.get('/')).status()).toBe(404);
 		expect((await request.get('/api/formula.json')).status()).toBe(404);
+	}
+});
+
+// An intentional navigation to a 404 logs a browser console error.
+playwrightTest('the error page uses the route locale for its copy and catalog link', async ({ page }) => {
+	for (const [locale, title, back] of [
+		['en', 'Page not found', 'Back to catalog'],
+		['zh-CN', '页面不存在', '返回目录'],
+	] as const) {
+		const response = await page.goto(route('formula/no-such-package-4f57d82e/', locale));
+		expect(response?.status()).toBe(404);
+		await expect(page.locator('html')).toHaveAttribute('lang', locale);
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+		await expect(page.getByRole('link', { name: back, exact: true })).toHaveAttribute('href', route('', locale));
 	}
 });
 

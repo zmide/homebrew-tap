@@ -1,5 +1,16 @@
 {
 	"plugins": ["oxc", "typescript", "unicorn", "vue"],
+	"jsPlugins": [{ "name": "i18n-key", "specifier": "@i18next-plugin/eslint" }],
 	"categories": { "correctness": "error" },
-	"ignorePatterns": [".nuxt/**", ".output/**", ".generated/**", "dist/**", "node_modules/**", "test-results/**", "playwright-report/**"]
+	"ignorePatterns": [".nuxt/**", ".output/**", ".generated/**", "dist/**", "node_modules/**", "test-results/**", "playwright-report/**"],
+	"overrides": [
+		{
+			"files": ["app.tsx", "error.tsx", "pages/**/*.{ts,tsx}", "components/catalog/**/*.{ts,tsx}", "composables/**/*.ts"],
+			"rules": {
+				"i18n-key/invalid-prefix": ["error", { "allowedPrefixes": ["nav", "home", "catalog", "copy", "theme", "footer", "error", "detail"] }],
+				"i18n-key/require-default-value": ["error", { "defaultValuePolicy": "forbidden" }],
+				"i18n-key/no-literal-string": ["error", { "autoFix": false }]
+			}
+		}
+	]
 }

@@ -61,7 +61,7 @@ export default defineComponent({
 									data-badge-preview>
 									<span class={styles.previewLabel} aria-hidden="true">
 										<img src={withBase('/homebrew.svg')} alt="" width="12" height="14" />
-										Homebrew
+										{defaultBadgeOptions.label}
 									</span>
 									<span class={styles.previewMessage} aria-hidden="true">
 										{value.message}
